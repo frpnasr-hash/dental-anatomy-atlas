@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tooth Detail | Dental Anatomy 🦷</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A6%B7%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/tooth.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="cosmic-bg">
+  <div class="stars"></div>
+  <div class="stars2"></div>
+  <div class="stars3"></div>
+  <div class="nebula neb1"></div>
+  <div class="nebula neb2"></div>
+  <div class="nebula neb3"></div>
+</div>
+
+<nav class="navbar">
+  <div class="nav-container">
+    <a href="../index.html" class="logo">
+      <span class="logo-icon">🦷</span>
+      <span class="logo-text">Dento<span class="logo-accent">Verse</span></span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="../index.html">◄ Hub</a></li>
+      <li><a href="index.html">Atlas Home</a></li>
+      <li><a href="index.html#atlas">Tooth Atlas</a></li>
+      <li><a href="index.html#anatomy">Anatomy 101</a></li>
+      <li><a href="index.html#numbering">Numbering</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- Tooth Header -->
+<header class="tooth-header">
+  <div class="tooth-breadcrumb">
+    <a href="index.html">Home</a> ›
+    <a href="index.html#atlas">Atlas</a> ›
+    <span id="bc-name">Tooth</span>
+  </div>
+
+  <div class="tooth-hero-grid">
+    <div class="tooth-hero-info">
+      <div class="tooth-tag" id="th-tag">◆ TOOTH ATLAS</div>
+      <h1 class="tooth-hero-title" id="th-name">Loading...</h1>
+      <p class="tooth-hero-sub" id="th-sub">Complete anatomical breakdown</p>
+      <div class="tooth-meta-grid">
+        <div class="meta-item"><div class="meta-label">Universal</div><div class="meta-val" id="th-uni">—</div></div>
+        <div class="meta-item"><div class="meta-label">FDI</div><div class="meta-val" id="th-fdi">—</div></div>
+        <div class="meta-item"><div class="meta-label">Palmer</div><div class="meta-val" id="th-palm">—</div></div>
+        <div class="meta-item"><div class="meta-label">Type</div><div class="meta-val" id="th-type">—</div></div>
+        <div class="meta-item"><div class="meta-label">Arch</div><div class="meta-val" id="th-arch">—</div></div>
+        <div class="meta-item"><div class="meta-label">Side</div><div class="meta-val" id="th-side">—</div></div>
+      </div>
+      <div class="nav-teeth">
+        <a href="#" class="nav-tooth-btn" id="prev-tooth">← Previous</a>
+        <a href="#" class="nav-tooth-btn" id="next-tooth">Next →</a>
+      </div>
+    </div>
+
+    <div class="tooth-hero-visual">
+      <div class="hero-tooth-3d" id="hero-tooth-container">
+        <div class="tooth-glow-ring"></div>
+        <div class="tooth-glow-ring r2"></div>
+        <img id="hero-tooth-img" alt="Tooth" />
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════ SECTION 1: CHRONOLOGY ═══════ -->
+<section class="tooth-section">
+  <div class="section-header-tooth">
+    <div class="section-number">01</div>
+    <div>
+      <div class="section-tag-tooth">◆ DEVELOPMENT TIMELINE</div>
+      <h2 class="section-title-tooth">Chronology</h2>
+    </div>
+  </div>
+
+  <div class="chrono-timeline">
+    <div class="timeline-track"></div>
+    <div class="chrono-event" data-event="calc">
+      <div class="chrono-icon">🌱</div>
+      <div class="chrono-year" id="chrono-calc">—</div>
+      <div class="chrono-label">Initial Calcification</div>
+      <div class="chrono-desc">Beginning of enamel and dentin formation</div>
+    </div>
+    <div class="chrono-event" data-event="crown">
+      <div class="chrono-icon">👑</div>
+      <div class="chrono-year" id="chrono-crown">—</div>
+      <div class="chrono-label">Crown Completion</div>
+      <div class="chrono-desc">All enamel formed on the crown</div>
+    </div>
+    <div class="chrono-event" data-event="erupt">
+      <div class="chrono-icon">⬆️</div>
+      <div class="chrono-year" id="chrono-erupt">—</div>
+      <div class="chrono-label">Eruption</div>
+      <div class="chrono-desc">Tooth breaks through the gum</div>
+    </div>
+    <div class="chrono-event" data-event="root">
+      <div class="chrono-icon">🌿</div>
+      <div class="chrono-year" id="chrono-root">—</div>
+      <div class="chrono-label">Root Completion</div>
+      <div class="chrono-desc">Root apex fully formed and closed</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ SECTION 2: NUMBERING SYSTEMS ═══════ -->
+<section class="tooth-section">
+  <div class="section-header-tooth">
+    <div class="section-number">02</div>
+    <div>
+      <div class="section-tag-tooth">◆ IDENTIFICATION</div>
+      <h2 class="section-title-tooth">Numbering Systems</h2>
+    </div>
+  </div>
+
+  <div class="numbering-cards">
+    <div class="num-mini-card">
+      <div class="num-mini-title">Universal</div>
+      <div class="num-mini-value" id="num-uni">—</div>
+      <div class="num-mini-note">🇺🇸 ADA Standard</div>
+    </div>
+    <div class="num-mini-card">
+      <div class="num-mini-title">FDI (ISO 3950)</div>
+      <div class="num-mini-value" id="num-fdi">—</div>
+      <div class="num-mini-note">🌍 International</div>
+    </div>
+    <div class="num-mini-card">
+      <div class="num-mini-title">Palmer Notation</div>
+      <div class="num-mini-value" id="num-palm">—</div>
+      <div class="num-mini-note">🦷 Clinical</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ SECTION 3: IDENTIFICATION ═══════ -->
+<section class="tooth-section">
+  <div class="section-header-tooth">
+    <div class="section-number">03</div>
+    <div>
+      <div class="section-tag-tooth">◆ KEY FEATURES</div>
+      <h2 class="section-title-tooth">Tooth Identification</h2>
+    </div>
+  </div>
+
+  <div class="ident-grid">
+    <div class="ident-card">
+      <div class="ident-head">
+        <span class="ident-icon">👑</span>
+        <h3>Crown Characteristics</h3>
+      </div>
+      <ul class="ident-list" id="crown-list">
+        <li><strong>Crown Shape:</strong> <span id="cs-shape">—</span></li>
+        <li><strong>Crown Outline:</strong> <span id="cs-outline">—</span></li>
+        <li><strong>Crown Symmetry:</strong> <span id="cs-sym">—</span></li>
+        <li><strong>Incisal / Occlusal Edge:</strong> <span id="cs-edge">—</span></li>
+      </ul>
+    </div>
+    <div class="ident-card">
+      <div class="ident-head">
+        <span class="ident-icon">🌿</span>
+        <h3>Root Characteristics</h3>
+      </div>
+      <ul class="ident-list">
+        <li><strong>Root Length:</strong> <span id="rc-length">—</span></li>
+        <li><strong>Root Shape:</strong> <span id="rc-shape">—</span></li>
+        <li><strong>Root Curvature:</strong> <span id="rc-curve">—</span></li>
+        <li><strong>Number of Roots:</strong> <span id="rc-count">—</span></li>
+      </ul>
+    </div>
+    <div class="ident-card">
+      <div class="ident-head">
+        <span class="ident-icon">✨</span>
+        <h3>Distinguishing Features</h3>
+      </div>
+      <ul class="ident-list">
+        <li><strong>Mesial Angle:</strong> <span id="df-mes">—</span></li>
+        <li><strong>Distal Angle:</strong> <span id="df-dist">—</span></li>
+        <li><strong>Cingulum Position:</strong> <span id="df-cing">—</span></li>
+        <li><strong>Contact Areas:</strong> <span id="df-contact">—</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ SECTIONS 4-8: SURFACES ═══════ -->
+<section class="tooth-section">
+  <div class="section-header-tooth">
+    <div class="section-number">04</div>
+    <div>
+      <div class="section-tag-tooth">◆ SURFACE ATLAS</div>
+      <h2 class="section-title-tooth">All Surfaces of the Tooth</h2>
+    </div>
+  </div>
+
+  <!-- Surface Tabs -->
+  <div class="surface-tabs">
+    <button class="surface-tab active" data-surface="labial">🔷 Labial / Buccal</button>
+    <button class="surface-tab" data-surface="lingual">🔶 Lingual / Palatal</button>
+    <button class="surface-tab" data-surface="mesial">◀ Mesial</button>
+    <button class="surface-tab" data-surface="distal">▶ Distal</button>
+    <button class="surface-tab" data-surface="incisal">⬆ Incisal / Occlusal</button>
+  </div>
+
+  <div class="surface-viewer" id="surface-viewer">
+    <!-- Populated by JS -->
+  </div>
+</section>
+
+<!-- ═══════ SECTION 5: CONTACT AREAS ═══════ -->
+<section class="tooth-section">
+  <div class="section-header-tooth">
+    <div class="section-number">05</div>
+    <div>
+      <div class="section-tag-tooth">◆ CONTACT ZONES</div>
+      <h2 class="section-title-tooth">Contact Areas</h2>
+    </div>
+  </div>
+
+  <div class="contact-grid">
+    <div class="contact-card">
+      <h3>◀ Mesial Contact Area</h3>
+      <ul>
+        <li><strong>Location:</strong> <span id="mca-loc">—</span></li>
+        <li><strong>Shape:</strong> <span id="mca-shape">—</span></li>
+        <li><strong>Clinical Importance:</strong> Prevents food impaction and stabilizes the arch.</li>
+      </ul>
+    </div>
+    <div class="contact-svg-box">
+      <svg viewBox="0 0 400 300" class="contact-svg" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="cToothGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="100%" stop-color="#cfe8ff"/>
+          </linearGradient>
+        </defs>
+        <!-- Tooth 1 -->
+        <path d="M 100 40 Q 70 100 80 200 Q 120 240 155 200 Q 165 100 135 40 Z" fill="url(#cToothGrad)" stroke="#8bc9ff" stroke-width="1.5"/>
+        <!-- Tooth 2 -->
+        <path d="M 200 40 Q 170 100 180 200 Q 220 240 255 200 Q 265 100 235 40 Z" fill="url(#cToothGrad)" stroke="#8bc9ff" stroke-width="1.5"/>
+        <!-- Tooth 3 -->
+        <path d="M 300 40 Q 270 100 280 200 Q 320 240 355 200 Q 365 100 335 40 Z" fill="url(#cToothGrad)" stroke="#8bc9ff" stroke-width="1.5"/>
+        <!-- Mesial contact -->
+        <circle cx="167" cy="90" r="8" fill="#ff6b1a" opacity="0.8"/>
+        <circle cx="167" cy="90" r="14" fill="none" stroke="#ff6b1a" stroke-width="2" opacity="0.5"/>
+        <!-- Distal contact -->
+        <circle cx="267" cy="90" r="8" fill="#00d4ff" opacity="0.8"/>
+        <circle cx="267" cy="90" r="14" fill="none" stroke="#00d4ff" stroke-width="2" opacity="0.5"/>
+        <!-- Labels -->
+        <line x1="167" y1="90" x2="167" y2="25" stroke="#ff6b1a" stroke-width="2"/>
+        <text x="167" y="20" fill="#ff6b1a" font-family="Rajdhani" font-size="14" font-weight="700" text-anchor="middle">MESIAL</text>
+        <line x1="267" y1="90" x2="267" y2="25" stroke="#00d4ff" stroke-width="2"/>
+        <text x="267" y="20" fill="#00d4ff" font-family="Rajdhani" font-size="14" font-weight="700" text-anchor="middle">DISTAL</text>
+        <text x="217" y="285" fill="#fff" font-family="Rajdhani" font-size="12" text-anchor="middle" letter-spacing="2">CONTACT AREAS</text>
+      </svg>
+    </div>
+    <div class="contact-card">
+      <h3>▶ Distal Contact Area</h3>
+      <ul>
+        <li><strong>Location:</strong> <span id="dca-loc">—</span></li>
+        <li><strong>Shape:</strong> <span id="dca-shape">—</span></li>
+        <li><strong>Clinical Importance:</strong> Maintains proximal contact and prevents drifting.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ SECTION 6: ROOT ANATOMY ═══════ -->
+<section class="tooth-section">
+  <div class="section-header-tooth">
+    <div class="section-number">06</div>
+    <div>
+      <div class="section-tag-tooth">◆ ROOT SYSTEM</div>
+      <h2 class="section-title-tooth">Root Anatomy</h2>
+    </div>
+  </div>
+
+  <div class="root-grid">
+    <div class="root-stat-card">
+      <div class="root-stat-icon">🌿</div>
+      <div class="root-stat-num" id="r-count">—</div>
+      <div class="root-stat-label">Number of Roots</div>
+    </div>
+    <div class="root-stat-card">
+      <div class="root-stat-icon">💉</div>
+      <div class="root-stat-num" id="r-canals">—</div>
+      <div class="root-stat-label">Number of Canals</div>
+    </div>
+    <div class="root-stat-card">
+      <div class="root-stat-icon">🔺</div>
+      <div class="root-stat-num" id="r-shape-s">—</div>
+      <div class="root-stat-label">Root Shape</div>
+    </div>
+    <div class="root-stat-card">
+      <div class="root-stat-icon">◆</div>
+      <div class="root-stat-num" id="r-cross">—</div>
+      <div class="root-stat-label">Cross Section</div>
+    </div>
+    <div class="root-stat-card">
+      <div class="root-stat-icon">〰️</div>
+      <div class="root-stat-num" id="r-curve-s">—</div>
+      <div class="root-stat-label">Root Curvature</div>
+    </div>
+  </div>
+
+  <div class="root-surfaces">
+    <h3 class="sub-title">Root Surfaces</h3>
+    <div class="root-surfaces-grid">
+      <div class="root-surface-item">
+        <div class="rs-title">Labial / Buccal Root Surface</div>
+        <div class="rs-desc">Convex, smooth. May show longitudinal grooves in some teeth.</div>
+      </div>
+      <div class="root-surface-item">
+        <div class="rs-title">Lingual / Palatal Root Surface</div>
+        <div class="rs-desc">Convex, narrower than labial. Tapers toward the apex.</div>
+      </div>
+      <div class="root-surface-item">
+        <div class="rs-title">Mesial Root Surface</div>
+        <div class="rs-desc">Often shows a developmental depression (root concavity).</div>
+      </div>
+      <div class="root-surface-item">
+        <div class="rs-title">Distal Root Surface</div>
+        <div class="rs-desc">Convex, usually smoother than mesial surface.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ SECTION 7: ELEVATIONS & DEPRESSIONS ═══════ -->
+<section class="tooth-section">
+  <div class="section-header-tooth">
+    <div class="section-number">07</div>
+    <div>
+      <div class="section-tag-tooth">◆ SURFACE TOPOGRAPHY</div>
+      <h2 class="section-title-tooth">Elevations &amp; Depressions</h2>
+    </div>
+  </div>
+
+  <div class="ed-grid">
+    <div class="ed-card ed-elev">
+      <div class="ed-head">
+        <span class="ed-icon">⬆️</span>
+        <h3>Elevations</h3>
+      </div>
+      <div class="ed-items">
+        <div class="ed-item"><span class="ed-dot"></span><div><strong>Cingulum</strong> — Bulge on the cervical third of the lingual surface.</div></div>
+        <div class="ed-item"><span class="ed-dot"></span><div><strong>Marginal Ridge</strong> — Linear elevation along the mesial/distal edges.</div></div>
+        <div class="ed-item"><span class="ed-dot"></span><div><strong>Cusp Ridge</strong> — Elevation from cusp tip descending along the surface.</div></div>
+        <div class="ed-item"><span class="ed-dot"></span><div><strong>Incisal Ridge</strong> — Rounded ridge at the incisal edge after wear.</div></div>
+        <div class="ed-item"><span class="ed-dot"></span><div><strong>Cervical Ridge</strong> — Rounded elevation on the cervical third of the crown.</div></div>
+      </div>
+    </div>
+    <div class="ed-card ed-depr">
+      <div class="ed-head">
+        <span class="ed-icon">⬇️</span>
+        <h3>Depressions</h3>
+      </div>
+      <div class="ed-items">
+        <div class="ed-item"><span class="ed-dot orange"></span><div><strong>Lingual Fossa</strong> — Shallow depression on the lingual surface.</div></div>
+        <div class="ed-item"><span class="ed-dot orange"></span><div><strong>Developmental Groove</strong> — Sharp line marking the fusion of lobes.</div></div>
+        <div class="ed-item"><span class="ed-dot orange"></span><div><strong>Supplemental Groove</strong> — Secondary shallow groove, non-lobal.</div></div>
+        <div class="ed-item"><span class="ed-dot orange"></span><div><strong>Pit</strong> — Small pinpoint depression, often at groove junctions.</div></div>
+        <div class="ed-item"><span class="ed-dot orange"></span><div><strong>Root Depression</strong> — Longitudinal concavity on the root.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ SECTION 8: CLINICAL NOTES ═══════ -->
+<section class="tooth-section">
+  <div class="section-header-tooth">
+    <div class="section-number">08</div>
+    <div>
+      <div class="section-tag-tooth">◆ CLINICAL RELEVANCE</div>
+      <h2 class="section-title-tooth">Clinical Notes</h2>
+    </div>
+  </div>
+
+  <div class="clinical-grid">
+    <div class="clinical-card">
+      <div class="clin-icon">💉</div>
+      <h3>Endodontic Considerations</h3>
+      <p id="clin-endo">Standard root canal treatment protocols apply. Access cavity design must respect the pulp chamber morphology.</p>
+    </div>
+    <div class="clinical-card">
+      <div class="clin-icon">🔧</div>
+      <h3>Restorative Considerations</h3>
+      <p id="clin-rest">Cavity preparation should preserve marginal ridges. Match anatomy of the neighboring surfaces for optimal occlusion.</p>
+    </div>
+    <div class="clinical-card">
+      <div class="clin-icon">🩹</div>
+      <h3>Extraction Considerations</h3>
+      <p id="clin-ext">Elevator and forcep application dictated by root morphology. Consider root curvature and adjacent structures.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ SECTION 9: SELF ASSESSMENT ═══════ -->
+<section class="tooth-section">
+  <div class="section-header-tooth">
+    <div class="section-number">09</div>
+    <div>
+      <div class="section-tag-tooth">◆ TEST YOURSELF</div>
+      <h2 class="section-title-tooth">Self-Assessment</h2>
+    </div>
+  </div>
+
+  <div class="quiz-box">
+    <div class="quiz-item">
+      <div class="quiz-num">Q1.</div>
+      <div class="quiz-body">
+        <div class="quiz-q">What is the Universal number of this tooth?</div>
+        <input class="quiz-input" data-answer="uni" placeholder="Type your answer...">
+        <button class="quiz-check" data-q="1">Check</button>
+        <span class="quiz-result" id="qr-1"></span>
+      </div>
+    </div>
+    <div class="quiz-item">
+      <div class="quiz-num">Q2.</div>
+      <div class="quiz-body">
+        <div class="quiz-q">How many roots does this tooth have?</div>
+        <input class="quiz-input" data-answer="roots" placeholder="Type your answer...">
+        <button class="quiz-check" data-q="2">Check</button>
+        <span class="quiz-result" id="qr-2"></span>
+      </div>
+    </div>
+    <div class="quiz-item">
+      <div class="quiz-num">Q3.</div>
+      <div class="quiz-body">
+        <div class="quiz-q">What is the tooth type (Incisor, Canine, Premolar, Molar)?</div>
+        <input class="quiz-input" data-answer="type" placeholder="Type your answer...">
+        <button class="quiz-check" data-q="3">Check</button>
+        <span class="quiz-result" id="qr-3"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ SECTION 10: QUICK REVISION ═══════ -->
+<section class="tooth-section">
+  <div class="section-header-tooth">
+    <div class="section-number">10</div>
+    <div>
+      <div class="section-tag-tooth">◆ AT A GLANCE</div>
+      <h2 class="section-title-tooth">Quick Revision Sheet</h2>
+    </div>
+  </div>
+
+  <div class="revision-card">
+    <div class="rev-header">
+      <div class="rev-title" id="rev-name">Tooth</div>
+      <div class="rev-badge" id="rev-badge">#—</div>
+    </div>
+    <div class="rev-grid">
+      <div class="rev-cell"><div class="rev-label">Universal #</div><div class="rev-val" id="rev-uni">—</div></div>
+      <div class="rev-cell"><div class="rev-label">FDI #</div><div class="rev-val" id="rev-fdi">—</div></div>
+      <div class="rev-cell"><div class="rev-label">Palmer</div><div class="rev-val" id="rev-palm">—</div></div>
+      <div class="rev-cell"><div class="rev-label">Roots</div><div class="rev-val" id="rev-roots">—</div></div>
+      <div class="rev-cell"><div class="rev-label">Canals</div><div class="rev-val" id="rev-canals">—</div></div>
+      <div class="rev-cell"><div class="rev-label">Eruption</div><div class="rev-val" id="rev-erupt">—</div></div>
+      <div class="rev-cell"><div class="rev-label">Root Completion</div><div class="rev-val" id="rev-root">—</div></div>
+      <div class="rev-cell"><div class="rev-label">Type</div><div class="rev-val" id="rev-type">—</div></div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-content">
+    <div class="footer-brand">
+      <div class="footer-logo">🦷 Dental<span class="logo-accent">Anatomy</span></div>
+      <p>A cosmic exploration of the human dentition. Every tooth, every surface, every detail.</p>
+    </div>
+    <div class="footer-links">
+      <h4>Explore</h4>
+      <a href="index.html#atlas">Tooth Atlas</a>
+      <a href="index.html#anatomy">Anatomy 101</a>
+      <a href="index.html#numbering">Numbering Systems</a>
+    </div>
+    <div class="footer-links">
+      <h4>References</h4>
+      <a href="https://www.kenhub.com/en/library/anatomy/incisors-structure-and-function" target="_blank">Kenhub</a>
+      <a href="https://anatomy.app" target="_blank">Anatomy.app</a>
+      <a href="https://sketchfab.com/Ebers/collections/dental-anatomy-f4398642fbf944689a23c3a10647bfb7" target="_blank">Sketchfab 3D Models</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="copyright">
+      Designed &amp; Produced by <strong>Abdel Rahman Teba</strong> © ® &nbsp;| All Rights Reserved
+    </div>
+    <div class="footer-tag">✦ Made with cosmic precision ✦</div>
+  </div>
+</footer>
+
+<script src="js/teeth-data.js"></script>
+<script src="js/tooth-details.js"></script>
+<script src="js/tooth.js"></script>
+</body>
+</html>

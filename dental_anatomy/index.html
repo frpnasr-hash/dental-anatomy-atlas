@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dental Anatomy 🦷 | Interactive Cosmic Atlas</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A6%B7%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- Cosmic Background -->
+<div class="cosmic-bg">
+  <div class="stars"></div>
+  <div class="stars2"></div>
+  <div class="stars3"></div>
+  <div class="nebula neb1"></div>
+  <div class="nebula neb2"></div>
+  <div class="nebula neb3"></div>
+</div>
+
+<!-- Navigation -->
+<nav class="navbar">
+  <div class="nav-container">
+    <a href="../index.html" class="logo">
+      <span class="logo-icon">🦷</span>
+      <span class="logo-text">Dento<span class="logo-accent">Verse</span></span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="../index.html">◄ Hub</a></li>
+      <li><a href="index.html" class="active">Atlas Home</a></li>
+      <li><a href="#atlas">Tooth Atlas</a></li>
+      <li><a href="#anatomy">Anatomy 101</a></li>
+      <li><a href="#numbering">Numbering</a></li>
+    </ul>
+    <div class="menu-toggle">☰</div>
+  </div>
+</nav>
+
+<!-- Hero Section -->
+<header class="hero">
+  <div class="hero-orbit">
+    <div class="orbit-ring r1"></div>
+    <div class="orbit-ring r2"></div>
+    <div class="orbit-ring r3"></div>
+    <div class="tooth-center">🦷</div>
+  </div>
+  <div class="hero-content">
+    <div class="hero-badge">🌌 Interactive Cosmic Atlas</div>
+    <h1 class="hero-title">
+      <span class="title-word">Dental</span>
+      <span class="title-word gradient">Anatomy</span>
+      <span class="tooth-emoji">🦷</span>
+    </h1>
+    <p class="hero-subtitle">
+      A complete, scientifically-accurate journey through every tooth of the human dentition.
+      Explore all 32 permanent teeth with full 3D references, labeled surfaces, chronology, and clinical insights.
+    </p>
+    <div class="hero-buttons">
+      <a href="#atlas" class="btn btn-primary">
+        <span>🚀 Explore The Atlas</span>
+      </a>
+      <a href="#anatomy" class="btn btn-secondary">
+        <span>📖 Learn Anatomy</span>
+      </a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-num">32</div><div class="stat-label">Permanent Teeth</div></div>
+      <div class="stat"><div class="stat-num">5</div><div class="stat-label">Surfaces Each</div></div>
+      <div class="stat"><div class="stat-num">3</div><div class="stat-label">Numbering Systems</div></div>
+      <div class="stat"><div class="stat-num">100%</div><div class="stat-label">Scientific</div></div>
+    </div>
+  </div>
+</header>
+
+<!-- Tooth Atlas Section -->
+<section id="atlas" class="section">
+  <div class="section-header">
+    <div class="section-tag">◆ INTERACTIVE ATLAS</div>
+    <h2 class="section-title">Click Any Tooth to Explore</h2>
+    <p class="section-desc">The complete permanent dentition — 16 maxillary and 16 mandibular teeth. Each tooth opens a full atlas of chronology, identification, surfaces, and clinical notes.</p>
+  </div>
+
+  <!-- Arch Selector -->
+  <div class="arch-tabs">
+    <button class="arch-tab active" data-arch="max">⬆ Maxillary Arch</button>
+    <button class="arch-tab" data-arch="mand">⬇ Mandibular Arch</button>
+  </div>
+
+  <!-- Maxillary Arch -->
+  <div class="arch-container" id="max-arch">
+    <div class="arch-label">MAXILLARY ARCH (UPPER)</div>
+    <div class="arch-svg-wrap">
+      <svg viewBox="0 0 900 380" class="arch-svg" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="archGrad" cx="50%" cy="50%">
+            <stop offset="0%" stop-color="#0a2540" stop-opacity="0.6"/>
+            <stop offset="100%" stop-color="#000814" stop-opacity="0.9"/>
+          </radialGradient>
+          <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <ellipse cx="450" cy="200" rx="420" ry="170" fill="url(#archGrad)" stroke="#00d4ff" stroke-width="1" stroke-opacity="0.3"/>
+        <path d="M 80 200 Q 450 -40 820 200" fill="none" stroke="#00d4ff" stroke-width="1" stroke-dasharray="4 4" opacity="0.4"/>
+      </svg>
+      <div class="teeth-row max-row" id="max-row"></div>
+    </div>
+  </div>
+
+  <!-- Mandibular Arch -->
+  <div class="arch-container hidden" id="mand-arch">
+    <div class="arch-label">MANDIBULAR ARCH (LOWER)</div>
+    <div class="arch-svg-wrap">
+      <svg viewBox="0 0 900 380" class="arch-svg" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="450" cy="180" rx="420" ry="170" fill="url(#archGrad)" stroke="#ff6b1a" stroke-width="1" stroke-opacity="0.3"/>
+        <path d="M 80 180 Q 450 420 820 180" fill="none" stroke="#ff6b1a" stroke-width="1" stroke-dasharray="4 4" opacity="0.4"/>
+      </svg>
+      <div class="teeth-row mand-row" id="mand-row"></div>
+    </div>
+  </div>
+
+  <div class="atlas-legend">
+    <div class="legend-item"><span class="dot inc"></span>Incisors</div>
+    <div class="legend-item"><span class="dot can"></span>Canines</div>
+    <div class="legend-item"><span class="dot pre"></span>Premolars</div>
+    <div class="legend-item"><span class="dot mol"></span>Molars</div>
+  </div>
+</section>
+
+<!-- Anatomy 101 -->
+<section id="anatomy" class="section anatomy-section">
+  <div class="section-header">
+    <div class="section-tag">◆ FUNDAMENTALS</div>
+    <h2 class="section-title">Tooth Anatomy 101</h2>
+    <p class="section-desc">Every tooth is a marvel of biological engineering. Explore the fundamental structures shared by all teeth.</p>
+  </div>
+
+  <div class="anatomy-grid">
+    <div class="anatomy-card">
+      <div class="card-icon">🔷</div>
+      <h3>Enamel</h3>
+      <p>The hardest substance in the human body (96% mineral). Translucent outer covering of the crown that protects underlying dentin.</p>
+    </div>
+    <div class="anatomy-card">
+      <div class="card-icon">🔶</div>
+      <h3>Dentin</h3>
+      <p>Bulk of the tooth. A yellowish tissue harder than bone but softer than enamel. Contains microscopic tubules.</p>
+    </div>
+    <div class="anatomy-card">
+      <div class="card-icon">💠</div>
+      <h3>Pulp</h3>
+      <p>The vital core — a soft tissue containing blood vessels, nerves, and connective tissue. Housed inside the pulp chamber and root canals.</p>
+    </div>
+    <div class="anatomy-card">
+      <div class="card-icon">◆</div>
+      <h3>Cementum</h3>
+      <p>Bone-like calcified tissue covering the root surface. Anchors the periodontal ligament fibers to the tooth.</p>
+    </div>
+    <div class="anatomy-card">
+      <div class="card-icon">🔺</div>
+      <h3>Periodontal Ligament</h3>
+      <p>A network of collagen fibers connecting the tooth root (via cementum) to the alveolar bone socket.</p>
+    </div>
+    <div class="anatomy-card">
+      <div class="card-icon">🔻</div>
+      <h3>Alveolar Bone</h3>
+      <p>The ridge of bone in the maxilla and mandible that contains the tooth sockets and supports the teeth.</p>
+    </div>
+  </div>
+
+  <!-- Cross-section illustration -->
+  <div class="tooth-cross-section">
+    <h3 class="cross-title">🔬 Anatomical Cross-Section</h3>
+    <svg viewBox="0 0 600 700" class="cross-svg" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="enamelGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="100%" stop-color="#cfe8ff"/>
+        </linearGradient>
+        <linearGradient id="dentinGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#ffcf99"/>
+          <stop offset="100%" stop-color="#e69950"/>
+        </linearGradient>
+        <linearGradient id="pulpGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#ff4d6d"/>
+          <stop offset="100%" stop-color="#c81d3d"/>
+        </linearGradient>
+        <linearGradient id="cementumGrad">
+          <stop offset="0%" stop-color="#d4a574"/>
+          <stop offset="100%" stop-color="#8b6f47"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Bone -->
+      <path d="M 30 380 L 570 380 L 570 680 L 30 680 Z" fill="#3a2418" opacity="0.6"/>
+      <path d="M 30 380 L 570 380 L 570 680 L 30 680 Z" fill="url(#dentinGrad)" opacity="0.15"/>
+
+      <!-- Root outline (cementum) -->
+      <path d="M 240 380 Q 220 500 250 640 Q 300 680 350 640 Q 380 500 360 380 Z" fill="url(#cementumGrad)"/>
+
+      <!-- Root Dentin -->
+      <path d="M 250 380 Q 235 500 260 630 Q 300 660 340 630 Q 365 500 350 380 Z" fill="url(#dentinGrad)"/>
+
+      <!-- Crown -->
+      <path d="M 220 380 Q 180 300 200 180 Q 240 80 300 60 Q 360 80 400 180 Q 420 300 380 380 Z" fill="url(#enamelGrad)" stroke="#8bc9ff" stroke-width="1.5"/>
+
+      <!-- Crown dentin -->
+      <path d="M 240 370 Q 210 300 225 200 Q 260 110 300 95 Q 340 110 375 200 Q 390 300 360 370 Z" fill="url(#dentinGrad)"/>
+
+      <!-- Pulp chamber -->
+      <path d="M 270 350 Q 255 280 265 220 Q 285 170 300 165 Q 315 170 335 220 Q 345 280 330 350 Q 320 400 315 500 Q 310 600 300 630 Q 290 600 285 500 Q 280 400 270 350 Z" fill="url(#pulpGrad)"/>
+
+      <!-- CEJ line -->
+      <path d="M 220 380 Q 300 395 380 380" fill="none" stroke="#00d4ff" stroke-width="2" stroke-dasharray="4 2"/>
+
+      <!-- Labels with lines -->
+      <g class="label-group">
+        <line x1="300" y1="130" x2="500" y2="90" stroke="#ff6b1a" stroke-width="2"/>
+        <circle cx="500" cy="90" r="4" fill="#ff6b1a"/>
+        <text x="510" y="95" fill="#fff" font-family="Rajdhani" font-size="18" font-weight="700">ENAMEL</text>
+        <text x="510" y="115" fill="#8bc9ff" font-family="Space Grotesk" font-size="12">Hardest tissue • 96% mineral</text>
+      </g>
+      <g class="label-group">
+        <line x1="255" y1="220" x2="90" y2="180" stroke="#ff6b1a" stroke-width="2"/>
+        <circle cx="90" cy="180" r="4" fill="#ff6b1a"/>
+        <text x="30" y="170" fill="#fff" font-family="Rajdhani" font-size="18" font-weight="700">DENTIN</text>
+        <text x="30" y="190" fill="#8bc9ff" font-family="Space Grotesk" font-size="12">Bulk tissue • Tubular</text>
+      </g>
+      <g class="label-group">
+        <line x1="300" y1="280" x2="500" y2="280" stroke="#ff6b1a" stroke-width="2"/>
+        <circle cx="500" cy="280" r="4" fill="#ff6b1a"/>
+        <text x="510" y="285" fill="#fff" font-family="Rajdhani" font-size="18" font-weight="700">PULP</text>
+        <text x="510" y="305" fill="#8bc9ff" font-family="Space Grotesk" font-size="12">Nerves &amp; blood vessels</text>
+      </g>
+      <g class="label-group">
+        <line x1="220" y1="390" x2="60" y2="390" stroke="#00d4ff" stroke-width="2"/>
+        <circle cx="60" cy="390" r="4" fill="#00d4ff"/>
+        <text x="30" y="385" fill="#fff" font-family="Rajdhani" font-size="16" font-weight="700">CEJ</text>
+        <text x="30" y="405" fill="#8bc9ff" font-family="Space Grotesk" font-size="11">Cemento-enamel junction</text>
+      </g>
+      <g class="label-group">
+        <line x1="345" y1="500" x2="510" y2="500" stroke="#ff6b1a" stroke-width="2"/>
+        <circle cx="510" cy="500" r="4" fill="#ff6b1a"/>
+        <text x="520" y="505" fill="#fff" font-family="Rajdhani" font-size="18" font-weight="700">CEMENTUM</text>
+        <text x="520" y="525" fill="#8bc9ff" font-family="Space Grotesk" font-size="12">Root surface covering</text>
+      </g>
+      <g class="label-group">
+        <line x1="300" y1="640" x2="500" y2="640" stroke="#ff6b1a" stroke-width="2"/>
+        <circle cx="500" cy="640" r="4" fill="#ff6b1a"/>
+        <text x="510" y="645" fill="#fff" font-family="Rajdhani" font-size="18" font-weight="700">ROOT APEX</text>
+        <text x="510" y="665" fill="#8bc9ff" font-family="Space Grotesk" font-size="12">Apical foramen</text>
+      </g>
+      <g class="label-group">
+        <line x1="220" y1="440" x2="60" y2="500" stroke="#ff6b1a" stroke-width="2"/>
+        <circle cx="60" cy="500" r="4" fill="#ff6b1a"/>
+        <text x="30" y="495" fill="#fff" font-family="Rajdhani" font-size="16" font-weight="700">PDL</text>
+        <text x="30" y="515" fill="#8bc9ff" font-family="Space Grotesk" font-size="11">Periodontal ligament</text>
+      </g>
+      <g class="label-group">
+        <line x1="150" y1="480" x2="60" y2="580" stroke="#ff6b1a" stroke-width="2"/>
+        <circle cx="60" cy="580" r="4" fill="#ff6b1a"/>
+        <text x="30" y="575" fill="#fff" font-family="Rajdhani" font-size="16" font-weight="700">ALVEOLAR</text>
+        <text x="30" y="595" fill="#fff" font-family="Rajdhani" font-size="16" font-weight="700">BONE</text>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<!-- Numbering Systems -->
+<section id="numbering" class="section numbering-section">
+  <div class="section-header">
+    <div class="section-tag">◆ CLASSIFICATION</div>
+    <h2 class="section-title">Numbering Systems</h2>
+    <p class="section-desc">Three internationally recognized systems used to identify every tooth in the mouth.</p>
+  </div>
+
+  <div class="numbering-grid">
+    <div class="num-card">
+      <div class="num-badge">01</div>
+      <h3>Universal Numbering</h3>
+      <div class="num-example">1 – 32</div>
+      <p>Used mainly in the United States. Numbering begins at the maxillary right third molar (#1), sweeps across to the maxillary left third molar (#16), drops to the mandibular left third molar (#17), and ends at the mandibular right third molar (#32).</p>
+      <div class="num-tag">🇺🇸 ADA Standard</div>
+    </div>
+    <div class="num-card">
+      <div class="num-badge">02</div>
+      <h3>FDI (ISO 3950)</h3>
+      <div class="num-example">11 – 48</div>
+      <p>Two-digit system used worldwide. First digit = quadrant (1: max-right, 2: max-left, 3: mand-left, 4: mand-right). Second digit = tooth position (1: central incisor → 8: third molar).</p>
+      <div class="num-tag">🌍 International</div>
+    </div>
+    <div class="num-card">
+      <div class="num-badge">03</div>
+      <h3>Palmer Notation</h3>
+      <div class="num-example">┘1 – ┐8</div>
+      <p>A graphical system that uses a right-angle symbol to indicate the quadrant, and a number (1–8) to indicate the tooth. Commonly used in orthodontics and oral surgery.</p>
+      <div class="num-tag">🦷 Clinical</div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-content">
+    <div class="footer-brand">
+      <div class="footer-logo">🦷 Dental<span class="logo-accent">Anatomy</span></div>
+      <p>A cosmic exploration of the human dentition. Every tooth, every surface, every detail.</p>
+    </div>
+    <div class="footer-links">
+      <h4>Explore</h4>
+      <a href="../index.html">◄ Back to DentoVerse Hub</a>
+      <a href="#atlas">Tooth Atlas</a>
+      <a href="#anatomy">Anatomy 101</a>
+      <a href="#numbering">Numbering Systems</a>
+    </div>
+    <div class="footer-links">
+      <h4>References</h4>
+      <a href="https://www.kenhub.com/en/library/anatomy/incisors-structure-and-function" target="_blank">Kenhub</a>
+      <a href="https://anatomy.app/article/incisors/maxillary-central-incisor" target="_blank">Anatomy.app</a>
+      <a href="https://pocketdentistry.com/6-the-permanent-maxillary-incisors/" target="_blank">Pocket Dentistry</a>
+      <a href="https://sketchfab.com/Ebers/collections/dental-anatomy-f4398642fbf944689a23c3a10647bfb7" target="_blank">Sketchfab 3D Models</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="copyright">
+      Designed &amp; Produced by <strong>Abdel Rahman Teba</strong> © ® &nbsp;| All Rights Reserved
+    </div>
+    <div class="footer-tag">✦ Made with cosmic precision ✦</div>
+  </div>
+</footer>
+
+<script src="js/teeth-data.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
