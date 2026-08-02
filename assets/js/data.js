@@ -31,19 +31,20 @@
    filters, favorites and section pages all read from this array.
    ═══════════════════════════════════════════════════════════════ */
 
-/* ───────── SITE CONFIG ───────── */
+/* ───────── SITE CONFIG ─────────
+   Contact details below belong to the site owner only. Do not add any
+   third-party contact information here. */
 const SITE = {
   name: "DentoVerse",
   tagline: "The All-In-One Dental Academic Hub",
   author: "Abdel Rahman Teba",
   year: 2026,
-  university: "Al Ryada University — Faculty of Oral & Dental Medicine",
   contact: {
-    telegramHelp1: "https://t.me/U_s_ef",
-    telegramHelp2: "https://t.me/yousefabdelhamed0",
-    telegramGroup: "https://t.me/+ZTCS_yHcAWkwNjA0",
-    bot1: "https://t.me/RST2727_BOT",
-    bot2: "https://t.me/RST_Dental_Bot"
+    telegramUser: "@Bfhve357",
+    telegram:     "https://t.me/Bfhve357",
+    phoneDisplay: "+20 109 187 4291",
+    phone:        "+201091874291",
+    whatsapp:     "https://wa.me/201091874291"
   }
 };
 
@@ -61,6 +62,7 @@ const SECTIONS = [
   { id: "notes",      label: "Study Notes",       icon: "📝", tagline: "Summaries, high-yield points & mnemonics" },
   { id: "flashcards", label: "Flashcards",        icon: "🃏", tagline: "Active-recall decks for fast revision" },
   { id: "quizzes",    label: "Quizzes",           icon: "🧠", tagline: "Self-assessment & exam practice" },
+  { id: "stage2",     label: "Stage 2 Guide",      icon: "🎓", tagline: "Second-year instruments: what to buy, what to skip & smart tips" },
   { id: "downloads",  label: "Downloads",         icon: "⬇️", tagline: "Instrument lists, templates & files" },
   { id: "favorites",  label: "Saved",             icon: "⭐", tagline: "Your bookmarked resources" },
   { id: "search",     label: "Search",            icon: "🔍", tagline: "Find anything across the hub" },
@@ -81,8 +83,39 @@ const CATEGORIES = [
   "Occlusion",
   "General Chemistry",
   "Instrument Lists",
+  "Study Skills",
   "General"
 ];
+
+/* ───────── STAGE 2 GUIDANCE DATA ─────────
+   Structured, editable guidance for second-year dentistry students.
+   Add/remove items freely — the Stage 2 page renders straight from here. */
+const STAGE2_GUIDE = {
+  intro: "A practical, student-tested guide for second-year (Stage 2) dentistry. It focuses on smart spending: which instruments are genuinely worth buying, which ones to skip, plus usage tips and study support based on the official course kits.",
+  buy: [
+    { name: "PKT wax carving kit", note: "Core of removable prosthodontics practicals — used constantly for wax-up. Buy a decent set once; it lasts for years." },
+    { name: "Wax knife (small size)", note: "A small wax knife gives far better control for fine trimming than a large one. Highly recommended for anatomy carving." },
+    { name: "Wax carver", note: "Essential for shaping and detailing wax. A comfortable handle matters more than a fancy brand." },
+    { name: "Mean-value articulator", note: "Needed for occlusion mounting exercises. A standard mean-value model is enough at this stage." },
+    { name: "Blue / inlay modelling wax", note: "You will go through a lot of it — buy in reasonable quantity from the start." },
+    { name: "Mirror, probe, tweezer, periodontal probe", note: "The basic diagnostic set. Buy quality stainless — cheap ones rust and bend quickly." },
+    { name: "Lab coat & basic PPE (gloves, mask, napkins)", note: "Mandatory for every lab. Stock disposables in bulk to save money over the term." }
+  ],
+  avoid: [
+    { name: "Expensive premium-brand instruments early on", note: "For a first-year kit, mid-range instruments perform the same in practicals. Save premium spending for clinical years." },
+    { name: "Oversized wax knives", note: "A large wax knife is harder to control for anatomy carving — a small size is the recommended choice." },
+    { name: "Full pre-made 'complete' kits with filler items", note: "Big bundles often pad the price with tools you rarely use. Buy the required list, add extras only when a course actually needs them." },
+    { name: "Buying duplicate consumables you already share", note: "Some casts, stones and disposables are shared or provided — confirm the required list before double-buying." }
+  ],
+  tips: [
+    "Match every purchase against the official required instrument list before paying — bring the list when you shop.",
+    "Label your instruments (tape / engraving) — lab kits look identical and get mixed up fast.",
+    "Keep waxes away from heat and direct sun so they don't deform before class.",
+    "Sharpen and dry metal instruments after each session to prevent rust.",
+    "Group-buy consumables with classmates to lower the per-student price.",
+    "Ask a senior which optional items are actually used before buying the 'recommended/additional' extras."
+  ]
+};
 
 /* ───────── RESOURCES ─────────
    The single source of truth. Extend freely. */
@@ -90,73 +123,17 @@ const RESOURCES = [
 
   /* ══════════ TELEGRAM HUB (LIVE NOW) ══════════ */
   {
-    id: "tg-group-main",
-    title: "Main Study Group",
+    id: "tg-owner",
+    title: "Contact on Telegram — @Bfhve357",
     type: "telegram",
     section: "telegram",
     category: "General",
-    description: "The primary Telegram community for announcements, resources and discussion. Join to stay in the loop with the whole batch.",
-    link: SITE.contact.telegramGroup,
+    description: "Reach the site owner directly on Telegram for support, resource requests, corrections and feedback.",
+    link: SITE.contact.telegram,
     thumbnail: "",
-    tags: ["group", "community", "announcements"],
+    tags: ["support", "help", "contact", "telegram"],
     status: "available",
     featured: true,
-    level: ""
-  },
-  {
-    id: "tg-bot-1",
-    title: "RST Dental Bot",
-    type: "telegram",
-    section: "telegram",
-    category: "General",
-    description: "Smart assistant bot for quick resource access and study help. Tap start inside Telegram to explore its commands.",
-    link: SITE.contact.bot1,
-    thumbnail: "",
-    tags: ["bot", "assistant", "automation"],
-    status: "available",
-    featured: true,
-    level: ""
-  },
-  {
-    id: "tg-bot-2",
-    title: "RST Dental Bot II",
-    type: "telegram",
-    section: "telegram",
-    category: "General",
-    description: "Secondary helper bot with additional resource shortcuts and study tools for the faculty.",
-    link: SITE.contact.bot2,
-    thumbnail: "",
-    tags: ["bot", "assistant", "tools"],
-    status: "available",
-    featured: false,
-    level: ""
-  },
-  {
-    id: "tg-help-1",
-    title: "Support — @U_s_ef",
-    type: "telegram",
-    section: "telegram",
-    category: "General",
-    description: "Need help? Contact the admin directly on Telegram for support, requests and technical questions.",
-    link: SITE.contact.telegramHelp1,
-    thumbnail: "",
-    tags: ["support", "help", "contact"],
-    status: "available",
-    featured: false,
-    level: ""
-  },
-  {
-    id: "tg-help-2",
-    title: "Support — @yousefabdelhamed0",
-    type: "telegram",
-    section: "telegram",
-    category: "General",
-    description: "Alternative support contact on Telegram for help, feedback and resource submissions.",
-    link: SITE.contact.telegramHelp2,
-    thumbnail: "",
-    tags: ["support", "help", "contact"],
-    status: "available",
-    featured: false,
     level: ""
   },
 
@@ -281,118 +258,146 @@ const RESOURCES = [
     level: "Level 1"
   },
   {
-    id: "dl-lv2-removable-instruments",
-    title: "Level 2 — Removable Prosthodontics Kit",
+    id: "dl-lv2-illustrated-reference",
+    title: "Level 2 — Illustrated Instruments Reference Kit",
     type: "download",
     section: "downloads",
     category: "Removable Prosthodontics",
-    description: "Official illustrated reference kit for Removable Prosthodontics & Occlusion: waxes, casting materials, PKT carving instruments, mean-value articulator and more.",
-    link: "",
+    description: "Fully illustrated reference for the Level 2 Removable Prosthodontics & Occlusion kit — 10 categories covering waxes, casting materials, equipment and instruments with required vs. recommended labels.",
+    link: "assets/media/pdf/level2-instruments-illustrated-reference.pdf",
     thumbnail: "",
-    tags: ["instruments", "level 2", "prosthodontics", "occlusion"],
-    status: "coming-soon",
+    tags: ["instruments", "level 2", "prosthodontics", "occlusion", "illustrated"],
+    status: "available",
     featured: true,
     level: "Level 2"
   },
   {
-    id: "dl-operative-instruments",
-    title: "Operative Dentistry Instruments",
+    id: "dl-removable-instruments",
+    title: "Removable Prosthodontics & Occlusion — Instrument List",
+    type: "download",
+    section: "downloads",
+    category: "Removable Prosthodontics",
+    description: "Concise instrument and material checklist: inlay/pink wax, plaster, PKT kit, micromotor & straight handpiece, stones/carbide burs, wax carving tools, secondary dentulous casts and mean-value articulator.",
+    link: "assets/media/pdf/removable-prosthodontics-instruments.pdf",
+    thumbnail: "",
+    tags: ["instruments", "removable", "occlusion", "checklist", "PKT"],
+    status: "available",
+    featured: false,
+    level: "Level 2"
+  },
+  {
+    id: "dl-operative-fixed-instruments",
+    title: "Operative & Fixed Prosthodontics — Instruments",
     type: "download",
     section: "downloads",
     category: "Operative Dentistry",
-    description: "Burs, handpieces, liners, glass slab, matrix, mirror/probe/tweezer set and disposable items list for the operative course.",
-    link: "",
+    description: "Combined list for Operative Dentistry (burs #330/#245, handpieces, liners, glass slab, mirror/probe/tweezer, disposables) and Fixed Prosthodontics Tech-I diamond stones (colour coded) for Fall 2025/2026.",
+    link: "assets/media/pdf/operative-fixed-prosthodontics-instruments.pdf",
     thumbnail: "",
-    tags: ["instruments", "operative", "burs", "checklist"],
-    status: "coming-soon",
-    featured: false,
-    level: "Level 2"
-  },
-  {
-    id: "dl-fixed-instruments",
-    title: "Fixed Prosthodontics Tech-I Kit",
-    type: "download",
-    section: "downloads",
-    category: "Fixed Prosthodontics",
-    description: "Diamond stones (colour coded), handpieces and materials list for the Fixed Prosthodontics Tech-I course (Fall 2025/2026).",
-    link: "",
-    thumbnail: "",
-    tags: ["instruments", "fixed", "prosthodontics", "checklist"],
-    status: "coming-soon",
+    tags: ["instruments", "operative", "fixed", "burs", "diamond stones"],
+    status: "available",
     featured: false,
     level: "Level 2"
   },
 
-  /* ══════════ PDF LIBRARY (placeholders — add links later) ══════════ */
+  /* ══════════ PDF LIBRARY (real uploaded files) ══════════ */
   {
-    id: "pdf-anatomy-lectures",
-    title: "Dental Anatomy — Lecture Notes",
-    type: "pdf",
-    section: "pdf",
-    category: "Dental Anatomy",
-    description: "Full lecture note set for the Dental Anatomy course. PDF will be attached here soon.",
-    link: "",
-    thumbnail: "",
-    tags: ["anatomy", "lectures", "notes"],
-    status: "coming-soon",
-    featured: false,
-    level: "Level 1"
-  },
-  {
-    id: "pdf-prostho-sheets",
-    title: "Removable Prosthodontics — Sheets",
+    id: "pdf-lv2-illustrated-reference",
+    title: "Level 2 Instruments — Illustrated Reference Kit",
     type: "pdf",
     section: "pdf",
     category: "Removable Prosthodontics",
-    description: "Summarised sheets for the removable prosthodontics & occlusion module. Coming soon.",
-    link: "",
+    description: "The complete illustrated instrument and materials reference for Removable Prosthodontics & Occlusion, organised into 10 categories with required and recommended items clearly marked.",
+    link: "assets/media/pdf/level2-instruments-illustrated-reference.pdf",
     thumbnail: "",
-    tags: ["prosthodontics", "sheets"],
-    status: "coming-soon",
+    tags: ["instruments", "illustrated", "level 2", "prosthodontics", "occlusion"],
+    status: "available",
+    featured: true,
+    level: "Level 2"
+  },
+  {
+    id: "pdf-removable-instruments",
+    title: "Removable Prosthodontics & Occlusion — Instrument List",
+    type: "pdf",
+    section: "pdf",
+    category: "Removable Prosthodontics",
+    description: "Quick-reference instrument and material checklist for the removable prosthodontics and occlusion lab, including the PKT kit, waxes, casts and mean-value articulator.",
+    link: "assets/media/pdf/removable-prosthodontics-instruments.pdf",
+    thumbnail: "",
+    tags: ["instruments", "checklist", "PKT", "occlusion"],
+    status: "available",
     featured: false,
     level: "Level 2"
   },
   {
-    id: "pdf-materials",
-    title: "Dental Materials — Reference",
+    id: "pdf-operative-fixed-instruments",
+    title: "Operative & Fixed Prosthodontics — Instruments",
     type: "pdf",
     section: "pdf",
-    category: "Dental Materials",
-    description: "Reference material covering waxes, casting materials and impression materials. Coming soon.",
-    link: "",
+    category: "Operative Dentistry",
+    description: "Instrument and material list covering operative dentistry burs and diagnostic set plus the Fixed Prosthodontics Tech-I diamond stones and handpieces.",
+    link: "assets/media/pdf/operative-fixed-prosthodontics-instruments.pdf",
     thumbnail: "",
-    tags: ["materials", "reference"],
-    status: "coming-soon",
+    tags: ["operative", "fixed", "burs", "diamond stones", "instruments"],
+    status: "available",
     featured: false,
-    level: ""
+    level: "Level 2"
   },
 
-  /* ══════════ VIDEO LIBRARY (placeholders) ══════════ */
+  /* ══════════ VIDEO LIBRARY (real uploaded files) ══════════ */
   {
-    id: "vid-carving",
-    title: "Wax Carving Technique",
+    id: "vid-removable-preclinical",
+    title: "Removable Prosthodontics Instruments — Preclinical",
     type: "video",
     section: "video",
-    category: "Dental Anatomy",
-    description: "Step-by-step demonstration of tooth wax carving. Video will be embedded here soon.",
-    link: "",
-    thumbnail: "",
-    tags: ["carving", "technique", "demo"],
-    status: "coming-soon",
-    featured: false,
-    level: "Level 1"
+    category: "Removable Prosthodontics",
+    description: "A walkthrough of the removable prosthodontics instruments for preclinical students, showing each tool and how it is used in the lab.",
+    link: "assets/media/video/removable-prostho-instruments-preclinical.mp4",
+    thumbnail: "assets/media/thumb/removable-prostho-instruments-preclinical.jpg",
+    tags: ["removable", "instruments", "preclinical", "demo"],
+    status: "available",
+    featured: true,
+    level: "Level 2"
   },
   {
-    id: "vid-articulator",
-    title: "Mounting on the Articulator",
+    id: "vid-instruments-guide",
+    title: "Dental Instruments — Overview Guide",
     type: "video",
     section: "video",
-    category: "Occlusion",
-    description: "Clinical demonstration of mounting casts on a mean-value articulator. Coming soon.",
-    link: "",
-    thumbnail: "",
-    tags: ["articulator", "occlusion", "demo"],
-    status: "coming-soon",
+    category: "Instrument Lists",
+    description: "A general overview video introducing common dental instruments and their purpose — a helpful primer before buying your kit.",
+    link: "assets/media/video/dental-instruments-guide.mp4",
+    thumbnail: "assets/media/thumb/dental-instruments-guide.jpg",
+    tags: ["instruments", "overview", "guide"],
+    status: "available",
+    featured: false,
+    level: "Level 2"
+  },
+  {
+    id: "vid-stage2-tools",
+    title: "Stage 2 Prosthodontics & Dental Materials — Practical Tools",
+    type: "video",
+    section: "video",
+    category: "Dental Materials",
+    description: "Second-year practical session covering the prosthodontics and dental materials tools you use in the lab, with hands-on demonstration.",
+    link: "assets/media/video/stage2-prostho-dental-materials-tools.mp4",
+    thumbnail: "assets/media/thumb/stage2-prostho-dental-materials-tools.jpg",
+    tags: ["stage 2", "prosthodontics", "materials", "tools", "practical"],
+    status: "available",
+    featured: true,
+    level: "Level 2"
+  },
+  {
+    id: "vid-stage2-study-gpa",
+    title: "Stage 2 Subjects — Study Plan & GPA Tips",
+    type: "video",
+    section: "video",
+    category: "Study Skills",
+    description: "A student-focused guide to the second-year dentistry subjects: how to study effectively, organise the course load and raise your GPA.",
+    link: "assets/media/video/stage2-subjects-study-guide-gpa.mp4",
+    thumbnail: "assets/media/thumb/stage2-subjects-study-guide-gpa.jpg",
+    tags: ["stage 2", "study skills", "GPA", "subjects", "advice"],
+    status: "available",
     featured: false,
     level: "Level 2"
   },
@@ -520,5 +525,6 @@ const DataAPI = {
 window.SITE = SITE;
 window.SECTIONS = SECTIONS;
 window.CATEGORIES = CATEGORIES;
+window.STAGE2_GUIDE = STAGE2_GUIDE;
 window.RESOURCES = RESOURCES;
 window.DataAPI = DataAPI;

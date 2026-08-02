@@ -78,9 +78,12 @@
       download: "Download"
     }[r.type] || "Open";
 
-    const action = isAvailable
-      ? `<a class="rc-btn" href="${escapeHtml(r.link)}" ${r.link.startsWith("http") ? 'target="_blank" rel="noopener"' : ""}>${actionLabel} →</a>`
-      : `<button class="rc-btn disabled" disabled>Coming Soon</button>`;
+    const isLocalMedia = isAvailable && (r.type === "video" || r.type === "pdf") && !/^https?:/i.test(r.link);
+    const action = !isAvailable
+      ? `<button class="rc-btn disabled" disabled>Coming Soon</button>`
+      : isLocalMedia
+        ? `<button class="rc-btn" data-view="${escapeHtml(r.id)}">${actionLabel} →</button>`
+        : `<a class="rc-btn" href="${escapeHtml(r.link)}" ${r.link.startsWith("http") ? 'target="_blank" rel="noopener"' : ""}>${actionLabel} →</a>`;
 
     card.innerHTML = `
       ${thumb}
@@ -109,6 +112,12 @@
       btn.textContent = now ? "★" : "☆";
       // If we're on favorites page, re-render
       if (state.section === "favorites") renderSection("favorites");
+    });
+
+    const viewBtn = card.querySelector("[data-view]");
+    if (viewBtn) viewBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      openMediaModal(r);
     });
 
     return card;
@@ -252,6 +261,7 @@
     if (sec === "favorites") return renderFavorites(root);
     if (sec === "search") return renderSearch(root);
     if (sec === "anatomy") return renderAnatomy(root);
+    if (sec === "stage2") return renderStage2(root);
 
     // Generic data-driven section
     const wrap = el("section", "section");
@@ -287,7 +297,7 @@
         <div class="tooth-center">🦷</div>
       </div>
       <div class="hero-content">
-        <div class="hero-badge">🌌 ${escapeHtml(SITE.university)}</div>
+        <div class="hero-badge">🌌 ${escapeHtml(SITE.tagline)}</div>
         <h1 class="hero-title">
           <span class="title-word">Dento</span><span class="title-word gradient">Verse</span>
         </h1>
@@ -426,8 +436,8 @@
         </div>
         <div class="about-card">
           <div class="card-icon">🎓</div>
-          <h3>Academic Home</h3>
-          <p>${escapeHtml(SITE.university)}. Content is organised by course, level and category so it stays
+          <h3>Organised by Course</h3>
+          <p>Content is organised by course, level and category so it stays
           clean and easy to navigate as it grows to hundreds of resources.</p>
         </div>
         <div class="about-card">
@@ -439,17 +449,111 @@
       </div>
 
       <div class="contact-panel">
-        <h3 class="contact-title">📞 Need Help? Contact Us</h3>
-        <p class="contact-sub">Reach the team directly on Telegram — support, requests & feedback welcome.</p>
+        <h3 class="contact-title">📞 Need Help? Get in Touch</h3>
+        <p class="contact-sub">Reach out directly for support, resource requests & feedback.</p>
         <div class="contact-links">
-          <a class="contact-btn tg" href="${SITE.contact.telegramHelp1}" target="_blank" rel="noopener">✈️ @U_s_ef</a>
-          <a class="contact-btn tg" href="${SITE.contact.telegramHelp2}" target="_blank" rel="noopener">✈️ @yousefabdelhamed0</a>
-          <a class="contact-btn grp" href="${SITE.contact.telegramGroup}" target="_blank" rel="noopener">👥 Main Group</a>
-          <a class="contact-btn bot" href="${SITE.contact.bot1}" target="_blank" rel="noopener">🤖 RST Bot</a>
-          <a class="contact-btn bot" href="${SITE.contact.bot2}" target="_blank" rel="noopener">🤖 RST Bot II</a>
+          <a class="contact-btn tg" href="${SITE.contact.telegram}" target="_blank" rel="noopener">✈️ Telegram ${escapeHtml(SITE.contact.telegramUser)}</a>
+          <a class="contact-btn grp" href="${SITE.contact.whatsapp}" target="_blank" rel="noopener">💬 WhatsApp ${escapeHtml(SITE.contact.phoneDisplay)}</a>
+          <a class="contact-btn bot" href="tel:${escapeHtml(SITE.contact.phone)}">📱 Call ${escapeHtml(SITE.contact.phoneDisplay)}</a>
         </div>
       </div>`;
     root.appendChild(wrap);
+  }
+
+  /* ───────── STAGE 2 DENTISTRY GUIDE ───────── */
+  function renderStage2(root) {
+    const wrap = el("section", "section");
+    const g = window.STAGE2_GUIDE || { intro: "", buy: [], avoid: [], tips: [] };
+    const stageRes = DataAPI.all().filter(r =>
+      r.level === "Level 2" && r.status === "available");
+
+    const buyItems = g.buy.map(i =>
+      `<li><span class="s2-name">✓ ${escapeHtml(i.name)}</span><span class="s2-note">${escapeHtml(i.note)}</span></li>`).join("");
+    const avoidItems = g.avoid.map(i =>
+      `<li><span class="s2-name">✕ ${escapeHtml(i.name)}</span><span class="s2-note">${escapeHtml(i.note)}</span></li>`).join("");
+    const tipItems = g.tips.map(t => `<li>💡 ${escapeHtml(t)}</li>`).join("");
+
+    wrap.innerHTML = `
+      ${sectionHeader("stage2")}
+      <div class="s2-intro glass-panel">
+        <div class="s2-intro-icon">🎓</div>
+        <p>${escapeHtml(g.intro)}</p>
+      </div>
+      <div class="s2-columns">
+        <div class="s2-col s2-buy glass-panel">
+          <h3 class="s2-col-title buy">🛒 Worth Buying</h3>
+          <ul class="s2-list">${buyItems}</ul>
+        </div>
+        <div class="s2-col s2-avoid glass-panel">
+          <h3 class="s2-col-title avoid">⚠️ Skip / Don't Rush to Buy</h3>
+          <ul class="s2-list">${avoidItems}</ul>
+        </div>
+      </div>
+      <div class="s2-tips glass-panel">
+        <h3 class="s2-col-title tips">🧭 Usage Tips & Student Advice</h3>
+        <ul class="s2-tip-list">${tipItems}</ul>
+      </div>
+      <div class="section-header" style="margin-top:2.5rem">
+        <div class="section-tag">◆ RELATED STAGE 2 RESOURCES</div>
+        <h2 class="section-title">📦 Instruments, PDFs & Videos</h2>
+        <p class="section-desc">The official instrument lists, guide videos and reference PDFs that back up this advice.</p>
+      </div>
+      <div class="s2-resources"></div>`;
+    root.appendChild(wrap);
+
+    const holder = wrap.querySelector(".s2-resources");
+    if (stageRes.length) renderGrid(holder, stageRes);
+    else holder.appendChild(emptyState("Stage 2 resources are on the way",
+      "Instrument lists and videos will appear here soon."));
+  }
+
+  /* ───────── MEDIA MODAL (video / pdf viewer) ───────── */
+  function openMediaModal(r) {
+    closeMediaModal();
+    const overlay = el("div", "media-modal");
+    overlay.id = "media-modal";
+
+    let body = "";
+    if (r.type === "video") {
+      body = `<video src="${escapeHtml(r.link)}" controls autoplay playsinline
+                ${r.thumbnail ? `poster="${escapeHtml(r.thumbnail)}"` : ""}></video>`;
+    } else {
+      body = `<iframe src="${escapeHtml(r.link)}" title="${escapeHtml(r.title)}"></iframe>`;
+    }
+
+    overlay.innerHTML = `
+      <div class="mm-inner glass-panel">
+        <div class="mm-head">
+          <div class="mm-titles">
+            <h3>${escapeHtml(r.title)}</h3>
+            <span class="mm-cat">${escapeHtml(r.category)}${r.level ? " · " + escapeHtml(r.level) : ""}</span>
+          </div>
+          <div class="mm-actions">
+            <a class="mm-open" href="${escapeHtml(r.link)}" target="_blank" rel="noopener">↗ Open</a>
+            <button class="mm-close" aria-label="Close">✕</button>
+          </div>
+        </div>
+        <div class="mm-body">${body}</div>
+        <p class="mm-desc">${escapeHtml(r.description)}</p>
+      </div>`;
+
+    document.body.appendChild(overlay);
+    document.body.classList.add("modal-open");
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay || e.target.closest(".mm-close")) closeMediaModal();
+    });
+    document.addEventListener("keydown", escCloseModal);
+  }
+  function escCloseModal(e) { if (e.key === "Escape") closeMediaModal(); }
+  function closeMediaModal() {
+    const m = document.getElementById("media-modal");
+    if (m) {
+      const v = m.querySelector("video");
+      if (v) { try { v.pause(); } catch (e) {} }
+      m.remove();
+    }
+    document.body.classList.remove("modal-open");
+    document.removeEventListener("keydown", escCloseModal);
   }
 
   /* ═══════ NAV BADGE ═══════ */
