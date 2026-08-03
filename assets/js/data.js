@@ -13,16 +13,21 @@
        id:          "unique-string",           // required, unique
        title:       "Human readable title",     // required
        type:        "pdf" | "video" | "telegram" | "link"
-                    | "note" | "flashcard" | "quiz" | "download",
+                    | "note" | "flashcard" | "quiz" | "download"
+                    | "playlist" | "drive",     // media / resource kind
        section:     "anatomy" | "pdf" | "video" | "telegram"
                     | "links" | "notes" | "flashcards" | "quizzes"
-                    | "downloads",              // which hub section it belongs to
+                    | "downloads" | "prothesis",// which hub section it belongs to
        category:    "Operative" | "Prosthodontics" | ...,  // free text group
+       subcategory: "Practical Prothesis Demonstrations" | ...,
+                    // the exact group a resource is filed under inside a
+                    // section (used to build the categorised Stage 2 area)
        description: "Short summary shown on the card",
-       link:        "https://...",              // destination (or "" if coming soon)
+       link:        "https://...",              // external destination ("" if pending)
+       file:        "assets/media/video/xyz.mp4",// local media file ("" if none)
        thumbnail:   "assets/img/xyz.jpg" | "",  // optional image
        tags:        ["tag1", "tag2"],           // for filtering / search
-       status:      "available" | "coming-soon",
+       status:      "available" | "coming-soon" | "pending-review",
        featured:    true | false,               // show on home featured row
        level:       "Level 1" | "Level 2" | ""  // optional academic level
      }
@@ -63,6 +68,7 @@ const SECTIONS = [
   { id: "flashcards", label: "Flashcards",        icon: "🃏", tagline: "Active-recall decks for fast revision" },
   { id: "quizzes",    label: "Quizzes",           icon: "🧠", tagline: "Self-assessment & exam practice" },
   { id: "stage2",     label: "Stage 2 Guide",      icon: "🎓", tagline: "Second-year instruments: what to buy, what to skip & smart tips" },
+  { id: "prothesis",  label: "Stage 2 Prothesis",  icon: "🪥", tagline: "Practical Prothesis videos, Drive resources, playlists & student guidance — neatly grouped" },
   { id: "downloads",  label: "Downloads",         icon: "⬇️", tagline: "Instrument lists, templates & files" },
   { id: "favorites",  label: "Saved",             icon: "⭐", tagline: "Your bookmarked resources" },
   { id: "search",     label: "Search",            icon: "🔍", tagline: "Find anything across the hub" },
@@ -117,9 +123,186 @@ const STAGE2_GUIDE = {
   ]
 };
 
+/* ───────── STAGE 2 PROTHESIS AREA — GROUP DEFINITIONS ─────────
+   The Stage 2 Prothesis / Practical Dentistry area is rendered as a set
+   of clearly ordered, categorised groups. Every resource whose
+   `section` is "prothesis" is placed into ONE of the groups below by
+   matching its `subcategory` field. To add a brand-new group later,
+   just add an object here and start tagging resources with its `key`.
+   Nothing else needs to change — empty groups render a polished
+   "Coming Soon" placeholder automatically. */
+const PROTHESIS_GROUPS = [
+  {
+    key: "Practical Prothesis Demonstrations",
+    icon: "🎬",
+    title: "Practical Prothesis Videos",
+    blurb: "Hands-on removable prosthesis demonstrations recorded in the lab — wax-up, record bases and denture-base materials."
+  },
+  {
+    key: "Stage 2 Student Guidance",
+    icon: "🎓",
+    title: "Stage 2 Student Guidance",
+    blurb: "Orientation and step-by-step overviews for students moving into Stage 2 Dentistry."
+  },
+  {
+    key: "Drive Video Resources",
+    icon: "📂",
+    title: "Drive Resources",
+    blurb: "Shared Google Drive videos and files curated for Stage 2 prosthesis learning."
+  },
+  {
+    key: "Playlist Resources",
+    icon: "▶️",
+    title: "YouTube Playlists",
+    blurb: "Curated video playlists that guide you through Stage 2 Dentistry topics."
+  },
+  {
+    key: "General Practical Dentistry Support",
+    icon: "🧭",
+    title: "Study Support",
+    blurb: "Extra notes, tips and support material for practical Stage 2 dentistry."
+  },
+  {
+    key: "Pending Review",
+    icon: "🕵️",
+    title: "Coming Soon / Pending Review",
+    blurb: "Resources being verified and organised. They will move into the right group once reviewed."
+  }
+];
+
 /* ───────── RESOURCES ─────────
    The single source of truth. Extend freely. */
 const RESOURCES = [
+
+  /* ══════════ STAGE 2 PROTHESIS AREA (LIVE NOW) ══════════
+     Data-driven, categorised resources for the practical Prothesis /
+     Stage 2 dentistry hub. Each item is filed into a PROTHESIS_GROUPS
+     group via its `subcategory`. Add more videos, Drive links,
+     playlists, PDFs and notes here freely — the grouped area rebuilds
+     itself automatically. */
+
+  /* ── Practical Prothesis Videos (uploaded local media) ── */
+  {
+    id: "pro-vid-waxup-workflow",
+    title: "Complete Prosthesis Wax-Up Workflow",
+    type: "video",
+    section: "prothesis",
+    category: "Removable Prosthodontics",
+    subcategory: "Practical Prothesis Demonstrations",
+    description: "A full lab walkthrough of the removable prosthesis wax-up: preparing the wax, using carving tools and the micromotor, and shaping the work step by step.",
+    link: "",
+    file: "assets/media/video/prothesis-complete-waxup-workflow.mp4",
+    thumbnail: "assets/media/thumb/prothesis-complete-waxup-workflow.jpg",
+    tags: ["prothesis", "wax-up", "removable", "practical", "demo", "stage 2"],
+    status: "available",
+    featured: true,
+    level: "Level 2"
+  },
+  {
+    id: "pro-vid-wax-record-base",
+    title: "Wax Record Base & Occlusion Rim — Practical",
+    type: "video",
+    section: "prothesis",
+    category: "Removable Prosthodontics",
+    subcategory: "Practical Prothesis Demonstrations",
+    description: "Hands-on demonstration of adapting pink wax on the cast to build a record base and occlusion rim on the glass slab.",
+    link: "",
+    file: "assets/media/video/prothesis-wax-record-base-rim.mp4",
+    thumbnail: "assets/media/thumb/prothesis-wax-record-base-rim.jpg",
+    tags: ["prothesis", "record base", "wax", "occlusion rim", "practical"],
+    status: "available",
+    featured: false,
+    level: "Level 2"
+  },
+  {
+    id: "pro-vid-acrylic-mixing",
+    title: "Denture Base Acrylic — Mixing Demonstration",
+    type: "video",
+    section: "prothesis",
+    category: "Dental Materials",
+    subcategory: "Practical Prothesis Demonstrations",
+    description: "Short practical clip showing how to mix denture-base acrylic (powder and liquid) to the right consistency for a removable prosthesis.",
+    link: "",
+    file: "assets/media/video/prothesis-denture-base-acrylic-mixing.mp4",
+    thumbnail: "assets/media/thumb/prothesis-denture-base-acrylic-mixing.jpg",
+    tags: ["prothesis", "acrylic", "materials", "mixing", "denture base"],
+    status: "available",
+    featured: false,
+    level: "Level 2"
+  },
+
+  /* ── Stage 2 Student Guidance (uploaded local media) ── */
+  {
+    id: "pro-vid-clinical-lab-steps",
+    title: "Prosthesis Clinical & Laboratory Steps — Overview",
+    type: "video",
+    section: "prothesis",
+    category: "Removable Prosthodontics",
+    subcategory: "Stage 2 Student Guidance",
+    description: "A clear illustrated chart video mapping the clinical steps against the laboratory steps of a removable prosthesis — a great orientation for new Stage 2 students.",
+    link: "",
+    file: "assets/media/video/stage2-prosthesis-clinical-lab-steps.mp4",
+    thumbnail: "assets/media/thumb/stage2-prosthesis-clinical-lab-steps.jpg",
+    tags: ["prothesis", "stage 2", "guidance", "clinical steps", "lab steps", "overview"],
+    status: "available",
+    featured: true,
+    level: "Level 2"
+  },
+
+  /* ── Drive Resources (external Google Drive) ── */
+  {
+    id: "pro-drive-stage2-move",
+    title: "Moving Up to Stage 2 Dentistry — Drive Video",
+    type: "drive",
+    section: "prothesis",
+    category: "Study Skills",
+    subcategory: "Drive Video Resources",
+    description: "A Google Drive video about students progressing into Stage 2 Dentistry — what to expect and how to prepare for the practical prosthesis year.",
+    link: "https://drive.google.com/file/d/10EjsixlZoS1hx5c7oXwiB10tDSptLh3a/view?usp=drivesdk",
+    file: "",
+    thumbnail: "",
+    tags: ["drive", "stage 2", "guidance", "orientation", "video"],
+    status: "available",
+    featured: false,
+    level: "Level 2"
+  },
+
+  /* ── Playlist Resources (external YouTube) ── */
+  {
+    id: "pro-playlist-stage2",
+    title: "Stage 2 Dentistry Guidance — YouTube Playlist",
+    type: "playlist",
+    section: "prothesis",
+    category: "Study Skills",
+    subcategory: "Playlist Resources",
+    description: "A curated YouTube playlist covering Stage 2 Dentistry guidance and practical prosthesis topics, arranged for easy step-by-step viewing.",
+    link: "https://youtube.com/playlist?list=PL9tmQLd9VswLvvNZ9VoQm4zpddWEIhKW8&si=8cH2MsOsE589rgX7",
+    file: "",
+    thumbnail: "",
+    tags: ["playlist", "youtube", "stage 2", "guidance", "prothesis"],
+    status: "available",
+    featured: false,
+    level: "Level 2"
+  },
+
+  /* ── Study Support (placeholder / future) ── */
+  {
+    id: "pro-support-notes",
+    title: "Stage 2 Prothesis — Study Notes",
+    type: "note",
+    section: "prothesis",
+    category: "Study Skills",
+    subcategory: "General Practical Dentistry Support",
+    description: "Summarised high-yield notes and quick tips for the practical prosthesis course. Content will be added here soon.",
+    link: "",
+    file: "",
+    thumbnail: "",
+    tags: ["notes", "study support", "prothesis", "stage 2"],
+    status: "coming-soon",
+    featured: false,
+    level: "Level 2"
+  },
+
 
   /* ══════════ TELEGRAM HUB (LIVE NOW) ══════════ */
   {
@@ -499,6 +682,9 @@ const DataAPI = {
   all() { return RESOURCES.slice(); },
   bySection(sec) { return RESOURCES.filter(r => r.section === sec); },
   byId(id) { return RESOURCES.find(r => r.id === id); },
+  bySubcategory(sub, sec) {
+    return RESOURCES.filter(r => r.subcategory === sub && (!sec || r.section === sec));
+  },
   featured() { return RESOURCES.filter(r => r.featured); },
   categories(sec) {
     const set = new Set(RESOURCES.filter(r => !sec || r.section === sec).map(r => r.category));
@@ -526,5 +712,6 @@ window.SITE = SITE;
 window.SECTIONS = SECTIONS;
 window.CATEGORIES = CATEGORIES;
 window.STAGE2_GUIDE = STAGE2_GUIDE;
+window.PROTHESIS_GROUPS = PROTHESIS_GROUPS;
 window.RESOURCES = RESOURCES;
 window.DataAPI = DataAPI;

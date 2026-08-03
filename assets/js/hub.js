@@ -34,11 +34,13 @@
   /* ───────── Icons per type ───────── */
   const TYPE_ICON = {
     pdf: "📄", video: "🎬", telegram: "✈️", link: "🔗",
-    note: "📝", flashcard: "🃏", quiz: "🧠", download: "⬇️"
+    note: "📝", flashcard: "🃏", quiz: "🧠", download: "⬇️",
+    playlist: "▶️", drive: "📂"
   };
   const TYPE_LABEL = {
     pdf: "PDF", video: "Video", telegram: "Telegram", link: "Link",
-    note: "Note", flashcard: "Flashcards", quiz: "Quiz", download: "Download"
+    note: "Note", flashcard: "Flashcards", quiz: "Quiz", download: "Download",
+    playlist: "Playlist", drive: "Drive"
   };
 
   /* ───────── Utility ───────── */
@@ -56,7 +58,11 @@
     const card = el("article", `res-card status-${r.status}`);
     card.dataset.id = r.id;
 
-    const isAvailable = r.status === "available" && r.link;
+    // A resource is openable if it has a usable local file OR external link,
+    // and it is not explicitly pending/coming-soon.
+    const src = r.file || r.link || "";
+    const isReady = r.status === "available";
+    const isAvailable = isReady && !!src;
     const fav = Favorites.has(r.id);
 
     const thumb = r.thumbnail
@@ -65,7 +71,9 @@
 
     const statusBadge = r.status === "available"
       ? `<span class="rc-status avail">● Available</span>`
-      : `<span class="rc-status soon">◔ Coming Soon</span>`;
+      : r.status === "pending-review"
+        ? `<span class="rc-status pending">🕵️ Pending Review</span>`
+        : `<span class="rc-status soon">◔ Coming Soon</span>`;
 
     const tags = (r.tags || []).slice(0, 4)
       .map(t => `<span class="rc-tag">#${escapeHtml(t)}</span>`).join("");
@@ -75,15 +83,17 @@
     const actionLabel = {
       pdf: "Open PDF", video: "Watch", telegram: "Open in Telegram",
       link: "Open Link", note: "Read", flashcard: "Study", quiz: "Start Quiz",
-      download: "Download"
+      download: "Download", playlist: "Open Playlist", drive: "Open in Drive"
     }[r.type] || "Open";
 
-    const isLocalMedia = isAvailable && (r.type === "video" || r.type === "pdf") && !/^https?:/i.test(r.link);
+    const pendingLabel = r.status === "pending-review" ? "Pending Review" : "Coming Soon";
+    // Local media (video / pdf served from our own assets) opens in the modal.
+    const isLocalMedia = isAvailable && (r.type === "video" || r.type === "pdf") && !/^https?:/i.test(src);
     const action = !isAvailable
-      ? `<button class="rc-btn disabled" disabled>Coming Soon</button>`
+      ? `<button class="rc-btn disabled" disabled>${pendingLabel}</button>`
       : isLocalMedia
         ? `<button class="rc-btn" data-view="${escapeHtml(r.id)}">${actionLabel} →</button>`
-        : `<a class="rc-btn" href="${escapeHtml(r.link)}" ${r.link.startsWith("http") ? 'target="_blank" rel="noopener"' : ""}>${actionLabel} →</a>`;
+        : `<a class="rc-btn" href="${escapeHtml(src)}" ${/^https?:/i.test(src) ? 'target="_blank" rel="noopener"' : ""}>${actionLabel} →</a>`;
 
     card.innerHTML = `
       ${thumb}
@@ -262,6 +272,7 @@
     if (sec === "search") return renderSearch(root);
     if (sec === "anatomy") return renderAnatomy(root);
     if (sec === "stage2") return renderStage2(root);
+    if (sec === "prothesis") return renderProthesis(root);
 
     // Generic data-driven section
     const wrap = el("section", "section");
@@ -507,18 +518,107 @@
       "Instrument lists and videos will appear here soon."));
   }
 
+  /* ───────── STAGE 2 PROTHESIS AREA (grouped, categorised) ───────── */
+  function renderProthesis(root) {
+    const wrap = el("section", "section");
+    const groups = window.PROTHESIS_GROUPS || [];
+    const all = DataAPI.bySection("prothesis");
+    const available = all.filter(r => r.status === "available").length;
+
+    wrap.innerHTML = `
+      ${sectionHeader("prothesis")}
+      <div class="pro-intro glass-panel">
+        <div class="pro-intro-icon">🪥</div>
+        <p>A dedicated, neatly organised area for <strong>practical Prothesis learning</strong> in Stage 2 Dentistry.
+        Every video, Drive link and playlist is filed into a clear group below — search and filter across all of them,
+        save your favourites, and open any resource with one tap. New material is added to these same groups over time.</p>
+      </div>
+      <div class="pro-metrics">
+        <div class="pro-metric"><span class="pm-num">${all.length}</span><span class="pm-label">Resources</span></div>
+        <div class="pro-metric"><span class="pm-num">${available}</span><span class="pm-label">Available</span></div>
+        <div class="pro-metric"><span class="pm-num">${groups.length}</span><span class="pm-label">Groups</span></div>
+      </div>
+      <div class="pro-groups"></div>`;
+    root.appendChild(wrap);
+
+    const groupsHolder = wrap.querySelector(".pro-groups");
+
+    const origIndex = new Map(all.map((r, i) => [r.id, i]));
+    const paintGroups = () => {
+      const f = readFilters();
+      // Filter without reordering, then keep the curated data-file order.
+      const filtered = applyFilters(all, f)
+        .sort((a, b) => origIndex.get(a.id) - origIndex.get(b.id));
+      groupsHolder.innerHTML = "";
+
+      let anyShown = false;
+      groups.forEach(g => {
+        const items = filtered.filter(r => r.subcategory === g.key);
+        const totalInGroup = all.filter(r => r.subcategory === g.key).length;
+
+        // Hide a group entirely only if filters are active AND it has no matches.
+        const filtersActive = f.q || f.type || f.cat || f.status;
+        if (filtersActive && !items.length) return;
+        anyShown = true;
+
+        const block = el("div", "pro-group");
+        block.innerHTML = `
+          <div class="pro-group-head">
+            <div class="pgh-left">
+              <span class="pgh-icon">${g.icon || "📦"}</span>
+              <div>
+                <h3 class="pgh-title">${escapeHtml(g.title)}</h3>
+                <p class="pgh-blurb">${escapeHtml(g.blurb || "")}</p>
+              </div>
+            </div>
+            <span class="pgh-count">${items.length}/${totalInGroup}</span>
+          </div>
+          <div class="pro-group-body"></div>`;
+        const body = block.querySelector(".pro-group-body");
+
+        if (items.length) {
+          const grid = el("div", "res-grid");
+          items.forEach(r => grid.appendChild(resourceCard(r)));
+          body.appendChild(grid);
+        } else {
+          // Polished empty-state / coming-soon placeholder for the group.
+          const ph = el("div", "pro-empty");
+          ph.innerHTML = `
+            <div class="pro-empty-orbit">${g.icon || "🛰️"}</div>
+            <h4>Coming Soon</h4>
+            <p>No resources in <strong>${escapeHtml(g.title)}</strong> yet — this group is ready and will fill up as new material is added.</p>`;
+          body.appendChild(ph);
+        }
+        groupsHolder.appendChild(block);
+      });
+
+      if (!anyShown) {
+        groupsHolder.appendChild(emptyState("No resources match your filters",
+          "Try clearing the search or choosing a different type, category or status."));
+      }
+    };
+
+    const bar = buildFilterBar("prothesis", paintGroups);
+    // Remove the sort control here — grouping defines the order.
+    const sortSel = bar.querySelector("#f-sort");
+    if (sortSel) sortSel.remove();
+    wrap.insertBefore(bar, groupsHolder);
+    paintGroups();
+  }
+
   /* ───────── MEDIA MODAL (video / pdf viewer) ───────── */
   function openMediaModal(r) {
     closeMediaModal();
     const overlay = el("div", "media-modal");
     overlay.id = "media-modal";
 
+    const mediaSrc = r.file || r.link || "";
     let body = "";
     if (r.type === "video") {
-      body = `<video src="${escapeHtml(r.link)}" controls autoplay playsinline
+      body = `<video src="${escapeHtml(mediaSrc)}" controls autoplay playsinline preload="metadata"
                 ${r.thumbnail ? `poster="${escapeHtml(r.thumbnail)}"` : ""}></video>`;
     } else {
-      body = `<iframe src="${escapeHtml(r.link)}" title="${escapeHtml(r.title)}"></iframe>`;
+      body = `<iframe src="${escapeHtml(mediaSrc)}" title="${escapeHtml(r.title)}"></iframe>`;
     }
 
     overlay.innerHTML = `
@@ -529,7 +629,7 @@
             <span class="mm-cat">${escapeHtml(r.category)}${r.level ? " · " + escapeHtml(r.level) : ""}</span>
           </div>
           <div class="mm-actions">
-            <a class="mm-open" href="${escapeHtml(r.link)}" target="_blank" rel="noopener">↗ Open</a>
+            <a class="mm-open" href="${escapeHtml(mediaSrc)}" target="_blank" rel="noopener">↗ Open</a>
             <button class="mm-close" aria-label="Close">✕</button>
           </div>
         </div>
