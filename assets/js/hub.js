@@ -273,6 +273,7 @@
     if (sec === "anatomy") return renderAnatomy(root);
     if (sec === "stage2") return renderStage2(root);
     if (sec === "prothesis") return renderProthesis(root);
+    if (sec === "biomaterials2") return renderBiomaterials2(root);
 
     // Generic data-driven section
     const wrap = el("section", "section");
@@ -604,6 +605,266 @@
     if (sortSel) sortSel.remove();
     wrap.insertBefore(bar, groupsHolder);
     paintGroups();
+  }
+
+  /* ───────── DENTAL BIOMATERIALS 2 · SEMESTER 1 (premium landing) ───────── */
+  function renderBiomaterials2(root) {
+    const meta = window.BIOMATERIALS2_META || {};
+    const groups = window.BIOMATERIALS2_GROUPS || [];
+    const all = DataAPI.bySection("biomaterials2");
+    const available = all.filter(r => r.status === "available").length;
+    const pending = all.filter(r => r.status !== "available").length;
+    const total = all.length;
+    const pct = total ? Math.round((available / total) * 100) : 0;
+
+    // Only show groups that actually contain resources (plus keep the
+    // scalable definition list intact for future additions).
+    const activeGroups = groups.filter(g => all.some(r => r.category === g.key));
+    const contact = (window.SITE && SITE.contact) || {};
+
+    const wrap = el("section", "section bm2");
+    wrap.innerHTML = `
+      <!-- Hero banner -->
+      <header class="bm2-hero glass-panel">
+        <div class="bm2-hero-glow"></div>
+        <div class="bm2-hero-content">
+          <div class="bm2-badges">
+            <span class="bm2-badge primary">🧪 ${escapeHtml(meta.courseCode || "DBM 2")}</span>
+            <span class="bm2-badge">${escapeHtml(meta.semester || "Semester 1")}</span>
+            <span class="bm2-badge">${escapeHtml(meta.year || "Second Year")}</span>
+          </div>
+          <h1 class="bm2-hero-title">${escapeHtml(meta.courseName || "Dental Biomaterials 2")}</h1>
+          <p class="bm2-hero-sub">${escapeHtml(meta.intro || "")}</p>
+          <div class="bm2-chips">
+            <span class="bm2-chip"><span class="chip-num">${total}</span> Lectures</span>
+            <span class="bm2-chip avail"><span class="chip-num">${available}</span> Available</span>
+            <span class="bm2-chip"><span class="chip-num">${activeGroups.length}</span> Topics</span>
+            ${pending ? `<span class="bm2-chip pending"><span class="chip-num">${pending}</span> Pending</span>` : ""}
+          </div>
+          <div class="bm2-progress">
+            <div class="bm2-progress-head">
+              <span>Course Materials Uploaded</span><span>${pct}%</span>
+            </div>
+            <div class="bm2-progress-track"><div class="bm2-progress-fill" style="width:${pct}%"></div></div>
+          </div>
+          <div class="bm2-hero-actions">
+            <button class="btn btn-primary" data-scroll="bm2-lectures"><span>📚 Browse Lectures</span></button>
+            <button class="btn btn-secondary" data-scroll="bm2-contact"><span>✉️ Request Materials</span></button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Controls: search + category tabs -->
+      <div id="bm2-lectures" class="bm2-controls">
+        <div class="bm2-search">
+          <span class="fs-icon">🔍</span>
+          <input type="text" id="bm2-q" placeholder="Search lectures by title, topic, tag or description…" />
+        </div>
+        <div class="bm2-filter-row">
+          <select class="filter-select" id="bm2-status">
+            <option value="">Any status</option>
+            <option value="available">Available</option>
+            <option value="coming-soon">Coming Soon</option>
+            <option value="pending-review">Pending Review</option>
+          </select>
+          <select class="filter-select" id="bm2-sort">
+            <option value="num">Lecture order</option>
+            <option value="az">A → Z</option>
+            <option value="za">Z → A</option>
+          </select>
+        </div>
+      </div>
+      <div class="bm2-tabs" id="bm2-tabs"></div>
+
+      <!-- Grouped lecture grid -->
+      <div class="bm2-groups" id="bm2-groups"></div>
+
+      <!-- Contact / request materials -->
+      <div id="bm2-contact" class="bm2-contact glass-panel">
+        <div class="bm2-contact-icon">✉️</div>
+        <div class="bm2-contact-text">
+          <h3>Need a Lecture or Missing a File?</h3>
+          <p>Reach out directly to request course materials, report a broken file or ask a question about ${escapeHtml(meta.courseName || "Dental Biomaterials 2")}.</p>
+        </div>
+        <div class="bm2-contact-actions">
+          ${contact.telegram ? `<a class="contact-btn tg" href="${escapeHtml(contact.telegram)}" target="_blank" rel="noopener">✈️ Telegram${contact.telegramUser ? " " + escapeHtml(contact.telegramUser) : ""}</a>` : ""}
+          ${contact.whatsapp ? `<a class="contact-btn grp" href="${escapeHtml(contact.whatsapp)}" target="_blank" rel="noopener">💬 WhatsApp${contact.phoneDisplay ? " " + escapeHtml(contact.phoneDisplay) : ""}</a>` : ""}
+        </div>
+      </div>`;
+    root.appendChild(wrap);
+
+    const tabsHolder = wrap.querySelector("#bm2-tabs");
+    const groupsHolder = wrap.querySelector("#bm2-groups");
+
+    const b2state = { cat: "all", q: "", status: "", sort: "num" };
+
+    // Build category tabs (All + one per active group, with counts).
+    const buildTabs = () => {
+      tabsHolder.innerHTML = "";
+      const mkTab = (key, icon, label, count) => {
+        const t = el("button", "bm2-tab" + (b2state.cat === key ? " active" : ""));
+        t.dataset.cat = key;
+        t.innerHTML = `${icon ? `<span class="bm2-tab-icon">${icon}</span>` : ""}<span>${escapeHtml(label)}</span><span class="bm2-tab-count">${count}</span>`;
+        t.addEventListener("click", () => { b2state.cat = key; buildTabs(); paint(); });
+        tabsHolder.appendChild(t);
+      };
+      mkTab("all", "✦", "All", all.length);
+      activeGroups.forEach(g => {
+        const c = all.filter(r => r.category === g.key).length;
+        mkTab(g.key, g.icon, g.title, c);
+      });
+    };
+
+    const filterList = (list) => {
+      let out = list.filter(r => {
+        if (b2state.cat !== "all" && r.category !== b2state.cat) return false;
+        if (b2state.status && r.status !== b2state.status) return false;
+        if (b2state.q) {
+          const hay = (r.title + " " + r.description + " " + r.category + " " +
+            (r.tags || []).join(" ")).toLowerCase();
+          if (!hay.includes(b2state.q)) return false;
+        }
+        return true;
+      });
+      if (b2state.sort === "az") out.sort((a, b) => a.title.localeCompare(b.title));
+      else if (b2state.sort === "za") out.sort((a, b) => b.title.localeCompare(a.title));
+      else out.sort((a, b) => (a.lectureNumber || 0) - (b.lectureNumber || 0));
+      return out;
+    };
+
+    const paint = () => {
+      const filtered = filterList(all);
+      groupsHolder.innerHTML = "";
+
+      if (!filtered.length) {
+        groupsHolder.appendChild(emptyState("No lectures match your search",
+          "Try clearing the search box, choosing a different topic tab, or resetting the status filter."));
+        return;
+      }
+
+      // When a single category tab is selected, render one flat grid.
+      // On "All", render grouped blocks in curated order.
+      const renderGroupsOrder = b2state.cat === "all"
+        ? activeGroups
+        : activeGroups.filter(g => g.key === b2state.cat);
+
+      renderGroupsOrder.forEach(g => {
+        const items = filtered.filter(r => r.category === g.key);
+        if (!items.length) return;
+        const block = el("div", "bm2-group");
+        block.innerHTML = `
+          <div class="bm2-group-head">
+            <span class="bm2-group-icon">${g.icon || "📦"}</span>
+            <div class="bm2-group-titles">
+              <h3>${escapeHtml(g.title)}</h3>
+              <p>${escapeHtml(g.blurb || "")}</p>
+            </div>
+            <span class="bm2-group-count">${items.length}</span>
+          </div>
+          <div class="bm2-group-grid"></div>`;
+        const grid = block.querySelector(".bm2-group-grid");
+        items.forEach(r => grid.appendChild(biomatCard(r)));
+        groupsHolder.appendChild(block);
+      });
+    };
+
+    // Wire controls
+    wrap.querySelector("#bm2-q").addEventListener("input", (e) => {
+      b2state.q = e.target.value.trim().toLowerCase(); paint();
+    });
+    wrap.querySelector("#bm2-status").addEventListener("change", (e) => {
+      b2state.status = e.target.value; paint();
+    });
+    wrap.querySelector("#bm2-sort").addEventListener("change", (e) => {
+      b2state.sort = e.target.value; paint();
+    });
+
+    // Smooth-scroll hero buttons (avoid changing the route hash).
+    wrap.querySelectorAll("[data-scroll]").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const target = wrap.querySelector("#" + btn.dataset.scroll);
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+
+    buildTabs();
+    paint();
+  }
+
+  /* Premium lecture card for the Biomaterials 2 section. Reuses the
+     favorites store and media modal but has a richer academic layout. */
+  function biomatCard(r) {
+    const card = el("article", `bm2-card status-${r.status}`);
+    card.dataset.id = r.id;
+
+    const src = r.file || r.link || "";
+    const isReady = r.status === "available";
+    const isAvailable = isReady && !!src;
+    const fav = Favorites.has(r.id);
+    const isLocalPdf = isAvailable && r.type === "pdf" && !/^https?:/i.test(src);
+
+    const statusBadge = r.status === "available"
+      ? `<span class="rc-status avail">● Available</span>`
+      : r.status === "pending-review"
+        ? `<span class="rc-status pending">🕵️ Pending Review</span>`
+        : `<span class="rc-status soon">◔ Coming Soon</span>`;
+
+    const tags = (r.tags || []).slice(0, 3)
+      .map(t => `<span class="rc-tag">#${escapeHtml(t)}</span>`).join("");
+
+    const num = r.lectureNumber ? String(r.lectureNumber).padStart(2, "0") : "•";
+    const pendingLabel = r.status === "pending-review" ? "Pending Review" : "Coming Soon";
+
+    const openBtn = !isAvailable
+      ? `<button class="rc-btn disabled" disabled>${pendingLabel}</button>`
+      : isLocalPdf
+        ? `<button class="rc-btn" data-view="${escapeHtml(r.id)}">📖 Open</button>`
+        : `<a class="rc-btn" href="${escapeHtml(src)}" ${/^https?:/i.test(src) ? 'target="_blank" rel="noopener"' : ""}>📖 Open</a>`;
+
+    const downloadBtn = isAvailable
+      ? `<a class="rc-btn ghost" href="${escapeHtml(src)}" download title="Download PDF">⬇️ Download</a>`
+      : "";
+
+    card.innerHTML = `
+      <div class="bm2-card-top">
+        <span class="bm2-card-num">${num}</span>
+        <div class="bm2-card-badges">
+          <span class="bm2-card-type">📄 PDF</span>
+          ${statusBadge}
+        </div>
+      </div>
+      <h3 class="bm2-card-title">${escapeHtml(r.title)}</h3>
+      <div class="bm2-card-meta">
+        <span class="bm2-meta-pill">${escapeHtml(r.category)}</span>
+        <span class="bm2-meta-pill sem">${escapeHtml(r.semester || "Semester 1")}</span>
+      </div>
+      <p class="bm2-card-desc">${escapeHtml(r.description)}</p>
+      <div class="bm2-card-tags">${tags}</div>
+      <div class="bm2-card-actions">
+        ${openBtn}
+        ${downloadBtn}
+        <button class="rc-fav ${fav ? "active" : ""}" data-fav="${escapeHtml(r.id)}" title="Save to favorites" aria-label="Save">
+          ${fav ? "★" : "☆"}
+        </button>
+      </div>`;
+
+    card.querySelector("[data-fav]").addEventListener("click", (e) => {
+      e.preventDefault();
+      const now = Favorites.toggle(r.id);
+      const btn = e.currentTarget;
+      btn.classList.toggle("active", now);
+      btn.textContent = now ? "★" : "☆";
+      if (state.section === "favorites") renderSection("favorites");
+    });
+
+    const viewBtn = card.querySelector("[data-view]");
+    if (viewBtn) viewBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      openMediaModal(r);
+    });
+
+    return card;
   }
 
   /* ───────── MEDIA MODAL (video / pdf viewer) ───────── */

@@ -69,6 +69,7 @@ const SECTIONS = [
   { id: "quizzes",    label: "Quizzes",           icon: "🧠", tagline: "Self-assessment & exam practice" },
   { id: "stage2",     label: "Stage 2 Guide",      icon: "🎓", tagline: "Second-year instruments: what to buy, what to skip & smart tips" },
   { id: "prothesis",  label: "Stage 2 Prothesis",  icon: "🪥", tagline: "Practical Prothesis videos, Drive resources, playlists & student guidance — neatly grouped" },
+  { id: "biomaterials2", label: "Biomaterials 2",  icon: "🧪", tagline: "Dental Biomaterials 2 · Semester 1 — theoretical lectures for second-year dentistry, organised & premium" },
   { id: "downloads",  label: "Downloads",         icon: "⬇️", tagline: "Instrument lists, templates & files" },
   { id: "favorites",  label: "Saved",             icon: "⭐", tagline: "Your bookmarked resources" },
   { id: "search",     label: "Search",            icon: "🔍", tagline: "Find anything across the hub" },
@@ -170,9 +171,305 @@ const PROTHESIS_GROUPS = [
   }
 ];
 
+/* ───────── DENTAL BIOMATERIALS 2 · SEMESTER 1 ─────────
+   Dedicated academic section for the theoretical lectures of second-year
+   dentistry. The section renders a premium landing page with a hero,
+   semester badge, progress chips, category filter tabs, search and a
+   grid of lecture cards grouped by category.
+
+   To add a future lecture, just push a resource whose `section` is
+   "biomaterials2" and whose `category` matches one of the group keys
+   below. Nothing else needs to change — new categories can also be added
+   to BIOMATERIALS2_GROUPS and they appear automatically. */
+const BIOMATERIALS2_META = {
+  courseCode: "DBM 2",
+  courseName: "Dental Biomaterials 2",
+  semester: "Semester 1",
+  year: "Second Year",
+  intro: "Dental Biomaterials 2 covers the theoretical foundations of the materials used in modern restorative and prosthetic dentistry. Across this semester you will study impression materials, gypsum products, polymers, dental cements, restorative composites, ceramics and casting metals — building the scientific understanding needed for both preclinical and clinical practice. All lecture files below are the official course material, organised into clean academic groups for fast revision."
+};
+
+/* Ordered category groups for the Biomaterials 2 section. Every group is
+   a filter tab and a titled block on the landing page. Empty groups render
+   a polished placeholder instead of breaking the layout. */
+const BIOMATERIALS2_GROUPS = [
+  { key: "Introduction & Basics",     icon: "📘", title: "Introduction & Basics",     blurb: "Foundational lectures introducing dental biomaterials and core concepts." },
+  { key: "Impression Materials",      icon: "🖐️", title: "Impression Materials",      blurb: "Recording the form and dimensions of oral tissues — rigid and elastic impression materials." },
+  { key: "Elastomeric Materials",     icon: "🧵", title: "Elastomeric Materials",     blurb: "Elastomers used for high-accuracy impressions — polysulfide, silicones and polyether." },
+  { key: "Gypsum Materials",          icon: "⬜", title: "Gypsum & Model Materials",  blurb: "Model and die materials, gypsum products and their properties." },
+  { key: "Polymers & Resins",         icon: "🧬", title: "Polymers & Resins",         blurb: "Denture base polymers, soft liners and polymerisation chemistry." },
+  { key: "Dental Cements",            icon: "🧱", title: "Dental Cements",            blurb: "Luting, lining and restorative cements including glass ionomer systems." },
+  { key: "Restorative Biomaterials",  icon: "🦷", title: "Restorative Biomaterials",  blurb: "Esthetic direct restorative materials such as resin composites." },
+  { key: "Ceramics",                  icon: "💎", title: "Ceramics",                  blurb: "Dental ceramics — structure, classification, fabrication and mechanical properties." },
+  { key: "Metals",                    icon: "⚙️", title: "Metals & Casting",         blurb: "Casting technology and dental casting alloys used for indirect restorations." },
+  { key: "Pending Review",            icon: "🕵️", title: "Pending Review",           blurb: "Files being verified and organised. They move into the correct group once reviewed." }
+];
+
 /* ───────── RESOURCES ─────────
    The single source of truth. Extend freely. */
 const RESOURCES = [
+
+  /* ══════════ DENTAL BIOMATERIALS 2 · SEMESTER 1 (LIVE NOW) ══════════
+     15 official theoretical lecture PDFs for second-year dentistry.
+     Files live under assets/media/pdf/biomaterials2/ and open in the
+     in-app PDF viewer modal. Classified via lightweight filename/context
+     cues — see BIOMATERIALS2_GROUPS for the group each `category` maps to. */
+  {
+    id: "bm2-01-intro-impression",
+    title: "Introduction to Impression Materials",
+    type: "pdf",
+    section: "biomaterials2",
+    category: "Introduction & Basics",
+    semester: "Semester 1",
+    description: "Definition, purpose and classification of impression materials — how a plastic material records the form and dimensions of oral tissues to produce an accurate cast.",
+    link: "assets/media/pdf/biomaterials2/01-introduction-to-impression-materials.pdf",
+    file: "assets/media/pdf/biomaterials2/01-introduction-to-impression-materials.pdf",
+    thumbnail: "",
+    tags: ["impression", "introduction", "cast", "classification", "basics"],
+    status: "available",
+    featured: true,
+    level: "Level 2",
+    lectureNumber: 1
+  },
+  {
+    id: "bm2-02-elastic-impression",
+    title: "Elastic Impression Materials",
+    type: "pdf",
+    section: "biomaterials2",
+    category: "Impression Materials",
+    semester: "Semester 1",
+    description: "The elastic impression material family — hydrocolloids (agar, alginate) and elastomers — with their setting mechanisms and clinical classification.",
+    link: "assets/media/pdf/biomaterials2/02-elastic-impression-materials.pdf",
+    file: "assets/media/pdf/biomaterials2/02-elastic-impression-materials.pdf",
+    thumbnail: "",
+    tags: ["impression", "elastic", "alginate", "hydrocolloids", "classification"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 2
+  },
+  {
+    id: "bm2-03-elastomers",
+    title: "Elastic Impression Materials II — Elastomers",
+    type: "pdf",
+    section: "biomaterials2",
+    category: "Elastomeric Materials",
+    semester: "Semester 1",
+    description: "Detailed study of elastomeric impression materials: polysulfide, condensation silicone, addition silicone and polyether — composition, setting and properties.",
+    link: "assets/media/pdf/biomaterials2/03-elastic-impression-materials-elastomers.pdf",
+    file: "assets/media/pdf/biomaterials2/03-elastic-impression-materials-elastomers.pdf",
+    thumbnail: "",
+    tags: ["elastomers", "silicone", "polyether", "polysulfide", "impression"],
+    status: "available",
+    featured: true,
+    level: "Level 2",
+    lectureNumber: 3
+  },
+  {
+    id: "bm2-04-rigid-impression",
+    title: "Rigid Impression Materials",
+    type: "pdf",
+    section: "biomaterials2",
+    category: "Impression Materials",
+    semester: "Semester 1",
+    description: "Rigid (inelastic) impression materials — impression compound and zinc oxide–eugenol — including presentation, softening technique and clinical handling.",
+    link: "assets/media/pdf/biomaterials2/04-rigid-impression-materials.pdf",
+    file: "assets/media/pdf/biomaterials2/04-rigid-impression-materials.pdf",
+    thumbnail: "",
+    tags: ["rigid", "impression compound", "zinc oxide eugenol", "border molding"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 4
+  },
+  {
+    id: "bm2-05-model-die",
+    title: "Model & Die Materials",
+    type: "pdf",
+    section: "biomaterials2",
+    category: "Gypsum Materials",
+    semester: "Semester 1",
+    description: "Gypsum and epoxy model & die materials — definitions of impression, cast and die, plus the ideal requirements of a good model material.",
+    link: "assets/media/pdf/biomaterials2/05-model-and-die-materials.pdf",
+    file: "assets/media/pdf/biomaterials2/05-model-and-die-materials.pdf",
+    thumbnail: "",
+    tags: ["gypsum", "model", "die", "cast", "epoxy"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 5
+  },
+  {
+    id: "bm2-06-ceramics-fabrication",
+    title: "Fabrication Techniques of Dental Ceramics",
+    type: "pdf",
+    section: "biomaterials2",
+    category: "Ceramics",
+    semester: "Semester 1",
+    description: "How dental ceramic restorations are formed — stacking, infusing, pressing and machining — and the role of condensation and the green state.",
+    link: "assets/media/pdf/biomaterials2/06-fabrication-techniques-of-dental-ceramics.pdf",
+    file: "assets/media/pdf/biomaterials2/06-fabrication-techniques-of-dental-ceramics.pdf",
+    thumbnail: "",
+    tags: ["ceramics", "fabrication", "stacking", "pressing", "machining"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 6
+  },
+  {
+    id: "bm2-07-casting-technology",
+    title: "Casting Technology",
+    type: "pdf",
+    section: "biomaterials2",
+    category: "Metals",
+    semester: "Semester 1",
+    description: "The lost-wax casting process for converting a wax pattern into an alloy restoration — spruing, investing, burnout, casting, devesting and finishing.",
+    link: "assets/media/pdf/biomaterials2/07-casting-technology.pdf",
+    file: "assets/media/pdf/biomaterials2/07-casting-technology.pdf",
+    thumbnail: "",
+    tags: ["casting", "lost-wax", "sprue", "investment", "burnout"],
+    status: "available",
+    featured: true,
+    level: "Level 2",
+    lectureNumber: 7
+  },
+  {
+    id: "bm2-08-intro-ceramics",
+    title: "Introduction to Ceramics",
+    type: "pdf",
+    section: "biomaterials2",
+    category: "Ceramics",
+    semester: "Semester 1",
+    description: "Fundamentals of ceramics — compounds of metallic and non-metallic elements, crystalline vs. amorphous (glass) structures and ionic bonding.",
+    link: "assets/media/pdf/biomaterials2/08-introduction-to-ceramics.pdf",
+    file: "assets/media/pdf/biomaterials2/08-introduction-to-ceramics.pdf",
+    thumbnail: "",
+    tags: ["ceramics", "introduction", "crystalline", "glass", "bonding"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 8
+  },
+  {
+    id: "bm2-09-ceramics-ii",
+    title: "Dental Ceramics II — Classification",
+    type: "pdf",
+    section: "biomaterials2",
+    category: "Ceramics",
+    semester: "Semester 1",
+    description: "Classification of dental ceramics by application and fabrication method — metal-ceramic and all-ceramic systems for crowns, inlays, veneers and FDPs.",
+    link: "assets/media/pdf/biomaterials2/09-dental-ceramics-ii.pdf",
+    file: "assets/media/pdf/biomaterials2/09-dental-ceramics-ii.pdf",
+    thumbnail: "",
+    tags: ["ceramics", "classification", "all-ceramic", "metal-ceramic", "crowns"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 9
+  },
+  {
+    id: "bm2-10-ceramics-iii",
+    title: "Dental Ceramics III — Mechanical Properties",
+    type: "pdf",
+    section: "biomaterials2",
+    category: "Ceramics",
+    semester: "Semester 1",
+    description: "Mechanical properties of dental ceramics — flexural strength and fracture toughness across zirconia, lithium disilicate, leucite-reinforced and feldspathic ceramics.",
+    link: "assets/media/pdf/biomaterials2/10-dental-ceramics-iii.pdf",
+    file: "assets/media/pdf/biomaterials2/10-dental-ceramics-iii.pdf",
+    thumbnail: "",
+    tags: ["ceramics", "flexural strength", "fracture toughness", "zirconia", "properties"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 10
+  },
+  {
+    id: "bm2-11-resin-composite",
+    title: "Resin Composite Restorative Materials",
+    type: "pdf",
+    section: "biomaterials2",
+    category: "Restorative Biomaterials",
+    semester: "Semester 1",
+    description: "Composition and behaviour of resin composites — organic matrix, inorganic fillers, coupling agent and initiator-activator system used as an esthetic restorative material.",
+    link: "assets/media/pdf/biomaterials2/11-resin-composite-restorative-materials.pdf",
+    file: "assets/media/pdf/biomaterials2/11-resin-composite-restorative-materials.pdf",
+    thumbnail: "",
+    tags: ["composite", "resin", "restorative", "fillers", "matrix"],
+    status: "available",
+    featured: true,
+    level: "Level 2",
+    lectureNumber: 11
+  },
+  {
+    id: "bm2-12-cements-1",
+    title: "Dental Cements — Part 1",
+    type: "pdf",
+    section: "biomaterials2",
+    category: "Dental Cements",
+    semester: "Semester 1",
+    description: "Applications and ideal requirements of dental cements — cavity lining, luting of crowns and bridges, temporary and permanent fillings, and biological properties.",
+    link: "assets/media/pdf/biomaterials2/12-dental-cements-part-1.pdf",
+    file: "assets/media/pdf/biomaterials2/12-dental-cements-part-1.pdf",
+    thumbnail: "",
+    tags: ["cements", "luting", "lining", "requirements", "restorative"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 12
+  },
+  {
+    id: "bm2-13-cements-2-gic",
+    title: "Dental Cements Part 2 — Glass Ionomer",
+    type: "pdf",
+    section: "biomaterials2",
+    category: "Dental Cements",
+    semester: "Semester 1",
+    description: "Glass ionomer cement in depth — water-based chemistry, modes of supply (powder/liquid, water-settable, capsules, paste-paste) with advantages and disadvantages.",
+    link: "assets/media/pdf/biomaterials2/13-dental-cements-part-2-glass-ionomer.pdf",
+    file: "assets/media/pdf/biomaterials2/13-dental-cements-part-2-glass-ionomer.pdf",
+    thumbnail: "",
+    tags: ["cements", "glass ionomer", "GIC", "capsules", "water-based"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 13
+  },
+  {
+    id: "bm2-14-polymer-denture-base",
+    title: "Polymer Denture Base Materials & Soft Liners",
+    type: "pdf",
+    section: "biomaterials2",
+    category: "Polymers & Resins",
+    semester: "Semester 1",
+    description: "Polymerisation chemistry and PMMA denture base materials — addition vs. condensation reactions, residual monomer, and soft liner materials.",
+    link: "assets/media/pdf/biomaterials2/14-polymer-denture-base-materials-and-soft-liners.pdf",
+    file: "assets/media/pdf/biomaterials2/14-polymer-denture-base-materials-and-soft-liners.pdf",
+    thumbnail: "",
+    tags: ["polymers", "PMMA", "denture base", "soft liners", "polymerisation"],
+    status: "available",
+    featured: true,
+    level: "Level 2",
+    lectureNumber: 14
+  },
+  {
+    id: "bm2-15-casting-alloys",
+    title: "Dental Casting Alloys",
+    type: "pdf",
+    section: "biomaterials2",
+    category: "Metals",
+    semester: "Semester 1",
+    description: "Classification of dental casting alloys by nobility (high-noble, noble, base metal) and by mechanical type (I–IV) for inlays, onlays, crowns and bridge/RPD frameworks.",
+    link: "assets/media/pdf/biomaterials2/15-dental-casting-alloys.pdf",
+    file: "assets/media/pdf/biomaterials2/15-dental-casting-alloys.pdf",
+    thumbnail: "",
+    tags: ["alloys", "casting", "noble metal", "base metal", "classification"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 15
+  },
+
 
   /* ══════════ STAGE 2 PROTHESIS AREA (LIVE NOW) ══════════
      Data-driven, categorised resources for the practical Prothesis /
@@ -713,5 +1010,7 @@ window.SECTIONS = SECTIONS;
 window.CATEGORIES = CATEGORIES;
 window.STAGE2_GUIDE = STAGE2_GUIDE;
 window.PROTHESIS_GROUPS = PROTHESIS_GROUPS;
+window.BIOMATERIALS2_META = BIOMATERIALS2_META;
+window.BIOMATERIALS2_GROUPS = BIOMATERIALS2_GROUPS;
 window.RESOURCES = RESOURCES;
 window.DataAPI = DataAPI;
