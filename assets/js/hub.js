@@ -274,6 +274,7 @@
     if (sec === "stage2") return renderStage2(root);
     if (sec === "prothesis") return renderProthesis(root);
     if (sec === "biomaterials2") return renderBiomaterials2(root);
+    if (sec === "bm2practical") return renderBM2Practical(root);
 
     // Generic data-driven section
     const wrap = el("section", "section");
@@ -794,8 +795,9 @@
 
   /* Premium lecture card for the Biomaterials 2 section. Reuses the
      favorites store and media modal but has a richer academic layout. */
-  function biomatCard(r) {
-    const card = el("article", `bm2-card status-${r.status}`);
+  function biomatCard(r, kind) {
+    const isQuestion = kind === "question";
+    const card = el("article", `bm2-card status-${r.status}${isQuestion ? " bm2-card-q" : ""}`);
     card.dataset.id = r.id;
 
     const src = r.file || r.link || "";
@@ -815,22 +817,28 @@
 
     const num = r.lectureNumber ? String(r.lectureNumber).padStart(2, "0") : "•";
     const pendingLabel = r.status === "pending-review" ? "Pending Review" : "Coming Soon";
+    const openLabel = isQuestion ? "🧠 Open" : "📖 Open";
+    const previewLabel = isQuestion ? "👁️ Preview" : openLabel;
 
     const openBtn = !isAvailable
       ? `<button class="rc-btn disabled" disabled>${pendingLabel}</button>`
       : isLocalPdf
-        ? `<button class="rc-btn" data-view="${escapeHtml(r.id)}">📖 Open</button>`
-        : `<a class="rc-btn" href="${escapeHtml(src)}" ${/^https?:/i.test(src) ? 'target="_blank" rel="noopener"' : ""}>📖 Open</a>`;
+        ? `<button class="rc-btn" data-view="${escapeHtml(r.id)}">${previewLabel}</button>`
+        : `<a class="rc-btn" href="${escapeHtml(src)}" ${/^https?:/i.test(src) ? 'target="_blank" rel="noopener"' : ""}>${openLabel}</a>`;
 
     const downloadBtn = isAvailable
       ? `<a class="rc-btn ghost" href="${escapeHtml(src)}" download title="Download PDF">⬇️ Download</a>`
       : "";
 
+    const typePill = isQuestion
+      ? `<span class="bm2-card-type q">🧠 Question File</span>`
+      : `<span class="bm2-card-type">📄 PDF</span>`;
+
     card.innerHTML = `
       <div class="bm2-card-top">
         <span class="bm2-card-num">${num}</span>
         <div class="bm2-card-badges">
-          <span class="bm2-card-type">📄 PDF</span>
+          ${typePill}
           ${statusBadge}
         </div>
       </div>
@@ -865,6 +873,243 @@
     });
 
     return card;
+  }
+
+  /* ───────── DENTAL BIOMATERIAL 2 · SEMESTER 1 — PRACTICAL (premium landing) ─────────
+     Two clearly labelled sub-sections on one page: Practical Lectures and a
+     Question Bank. Fully data-driven — reads bm2practical resources and the
+     BM2P_* group/meta definitions from data.js. */
+  function renderBM2Practical(root) {
+    const meta = window.BM2P_META || {};
+    const lecGroups = window.BM2P_LECTURE_GROUPS || [];
+    const qGroups = window.BM2P_QUESTION_GROUPS || [];
+    const all = DataAPI.bySection("bm2practical");
+    const lectures = all.filter(r => r.subsection === "lectures");
+    const questions = all.filter(r => r.subsection === "questions");
+    const available = all.filter(r => r.status === "available").length;
+    const pending = all.filter(r => r.status !== "available").length;
+    const total = all.length;
+    const pct = total ? Math.round((available / total) * 100) : 0;
+    const contact = (window.SITE && SITE.contact) || {};
+
+    const wrap = el("section", "section bm2 bm2p");
+    wrap.innerHTML = `
+      <!-- Hero banner -->
+      <header class="bm2-hero glass-panel">
+        <div class="bm2-hero-glow"></div>
+        <div class="bm2-hero-content">
+          <div class="bm2-badges">
+            <span class="bm2-badge primary">🔬 ${escapeHtml(meta.courseCode || "DBM 2")} · Practical</span>
+            <span class="bm2-badge">${escapeHtml(meta.semester || "Semester 1")}</span>
+            <span class="bm2-badge">${escapeHtml(meta.year || "Second Year")}</span>
+          </div>
+          <h1 class="bm2-hero-title">${escapeHtml(meta.courseName || "Dental Biomaterial 2 — Practical")}</h1>
+          <p class="bm2-hero-sub">${escapeHtml(meta.intro || "")}</p>
+          <div class="bm2-chips">
+            <span class="bm2-chip"><span class="chip-num">${lectures.length}</span> Practical Lectures</span>
+            <span class="bm2-chip"><span class="chip-num">${questions.length}</span> Question Files</span>
+            <span class="bm2-chip avail"><span class="chip-num">${available}</span> Available</span>
+            ${pending ? `<span class="bm2-chip pending"><span class="chip-num">${pending}</span> Pending</span>` : ""}
+          </div>
+          <div class="bm2-progress">
+            <div class="bm2-progress-head">
+              <span>Course Materials Uploaded</span><span>${pct}%</span>
+            </div>
+            <div class="bm2-progress-track"><div class="bm2-progress-fill" style="width:${pct}%"></div></div>
+          </div>
+          <div class="bm2-hero-actions">
+            <button class="btn btn-primary" data-scroll="bm2p-lectures"><span>🔬 Practical Lectures</span></button>
+            <button class="btn btn-secondary" data-scroll="bm2p-questions"><span>🧠 Question Bank</span></button>
+            <button class="btn btn-secondary" data-scroll="bm2p-contact"><span>✉️ Request Materials</span></button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Global search across both sub-sections -->
+      <div class="bm2-controls">
+        <div class="bm2-search">
+          <span class="fs-icon">🔍</span>
+          <input type="text" id="bm2p-q" placeholder="Search lectures & questions by title, topic, tag or description…" />
+        </div>
+        <div class="bm2-filter-row">
+          <select class="filter-select" id="bm2p-status">
+            <option value="">Any status</option>
+            <option value="available">Available</option>
+            <option value="coming-soon">Coming Soon</option>
+            <option value="pending-review">Pending Review</option>
+          </select>
+          <select class="filter-select" id="bm2p-sort">
+            <option value="num">Lecture order</option>
+            <option value="az">A → Z</option>
+            <option value="za">Z → A</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ══ PRACTICAL LECTURES ══ -->
+      <div id="bm2p-lectures" class="bm2p-subsection">
+        <div class="bm2p-sub-head">
+          <div class="bm2p-sub-head-left">
+            <span class="bm2p-sub-icon">🔬</span>
+            <div>
+              <h2 class="bm2p-sub-title">Practical Lectures</h2>
+              <p class="bm2p-sub-blurb">The official second-year practical lecture files, grouped by academic theme.</p>
+            </div>
+          </div>
+          <span class="bm2p-sub-count">${lectures.length} files</span>
+        </div>
+        <div class="bm2-tabs" id="bm2p-lec-tabs"></div>
+        <div class="bm2-groups" id="bm2p-lec-groups"></div>
+      </div>
+
+      <!-- ══ QUESTION BANK ══ -->
+      <div id="bm2p-questions" class="bm2p-subsection bm2p-qb">
+        <div class="bm2p-sub-head">
+          <div class="bm2p-sub-head-left">
+            <span class="bm2p-sub-icon">🧠</span>
+            <div>
+              <h2 class="bm2p-sub-title">Question Bank</h2>
+              <p class="bm2p-sub-blurb">Exam-preparation question sets — MCQs and short questions grouped for focused revision.</p>
+            </div>
+          </div>
+          <span class="bm2p-sub-count">${questions.length} files</span>
+        </div>
+        <div class="bm2-tabs" id="bm2p-q-tabs"></div>
+        <div class="bm2-groups" id="bm2p-q-groups"></div>
+      </div>
+
+      <!-- Contact / request materials -->
+      <div id="bm2p-contact" class="bm2-contact glass-panel">
+        <div class="bm2-contact-icon">✉️</div>
+        <div class="bm2-contact-text">
+          <h3>Need a Lecture or Missing a File?</h3>
+          <p>Reach out directly to request course materials, report a broken file or ask a question about ${escapeHtml(meta.courseName || "Dental Biomaterial 2 — Practical")}.</p>
+        </div>
+        <div class="bm2-contact-actions">
+          ${contact.telegram ? `<a class="contact-btn tg" href="${escapeHtml(contact.telegram)}" target="_blank" rel="noopener">✈️ Telegram${contact.telegramUser ? " " + escapeHtml(contact.telegramUser) : ""}</a>` : ""}
+          ${contact.whatsapp ? `<a class="contact-btn grp" href="${escapeHtml(contact.whatsapp)}" target="_blank" rel="noopener">💬 WhatsApp${contact.phoneDisplay ? " " + escapeHtml(contact.phoneDisplay) : ""}</a>` : ""}
+        </div>
+      </div>`;
+    root.appendChild(wrap);
+
+    // Shared filter state across both sub-sections.
+    const st = { q: "", status: "", sort: "num", lecCat: "all", qCat: "all" };
+
+    const filterList = (list) => {
+      let out = list.filter(r => {
+        if (st.status && r.status !== st.status) return false;
+        if (st.q) {
+          const hay = (r.title + " " + r.description + " " + r.category + " " +
+            (r.tags || []).join(" ")).toLowerCase();
+          if (!hay.includes(st.q)) return false;
+        }
+        return true;
+      });
+      if (st.sort === "az") out.sort((a, b) => a.title.localeCompare(b.title));
+      else if (st.sort === "za") out.sort((a, b) => b.title.localeCompare(a.title));
+      else out.sort((a, b) => (a.lectureNumber || 0) - (b.lectureNumber || 0));
+      return out;
+    };
+
+    // Generic renderer for one sub-section (lectures or questions).
+    function renderBlock(cfg) {
+      const items = cfg.items;
+      const groups = cfg.groups;
+      const tabsHolder = wrap.querySelector(cfg.tabsSel);
+      const groupsHolder = wrap.querySelector(cfg.groupsSel);
+      const activeGroups = groups.filter(g => items.some(r => r.category === g.key));
+
+      const buildTabs = () => {
+        tabsHolder.innerHTML = "";
+        const mkTab = (key, icon, label, count) => {
+          const t = el("button", "bm2-tab" + (cfg.getCat() === key ? " active" : ""));
+          t.innerHTML = `${icon ? `<span class="bm2-tab-icon">${icon}</span>` : ""}<span>${escapeHtml(label)}</span><span class="bm2-tab-count">${count}</span>`;
+          t.addEventListener("click", () => { cfg.setCat(key); buildTabs(); paint(); });
+          tabsHolder.appendChild(t);
+        };
+        mkTab("all", "✦", "All", items.length);
+        activeGroups.forEach(g => {
+          const c = items.filter(r => r.category === g.key).length;
+          mkTab(g.key, g.icon, g.title, c);
+        });
+      };
+
+      const paint = () => {
+        const filtered = filterList(items);
+        groupsHolder.innerHTML = "";
+        if (!filtered.length) {
+          groupsHolder.appendChild(emptyState("No files match your search",
+            "Try clearing the search box, choosing a different tab, or resetting the status filter."));
+          return;
+        }
+        const order = cfg.getCat() === "all"
+          ? activeGroups
+          : activeGroups.filter(g => g.key === cfg.getCat());
+        order.forEach(g => {
+          const gi = filtered.filter(r => r.category === g.key);
+          if (!gi.length) return;
+          const block = el("div", "bm2-group");
+          block.innerHTML = `
+            <div class="bm2-group-head">
+              <span class="bm2-group-icon">${g.icon || "📦"}</span>
+              <div class="bm2-group-titles">
+                <h3>${escapeHtml(g.title)}</h3>
+                <p>${escapeHtml(g.blurb || "")}</p>
+              </div>
+              <span class="bm2-group-count">${gi.length}</span>
+            </div>
+            <div class="bm2-group-grid"></div>`;
+          const grid = block.querySelector(".bm2-group-grid");
+          gi.forEach(r => grid.appendChild(biomatCard(r, cfg.kind)));
+          groupsHolder.appendChild(block);
+        });
+      };
+
+      cfg.buildTabs = buildTabs;
+      cfg.paint = paint;
+      buildTabs();
+      paint();
+      return cfg;
+    }
+
+    const lecCfg = renderBlock({
+      kind: "lecture",
+      items: lectures,
+      groups: lecGroups,
+      tabsSel: "#bm2p-lec-tabs",
+      groupsSel: "#bm2p-lec-groups",
+      getCat: () => st.lecCat,
+      setCat: (v) => { st.lecCat = v; }
+    });
+    const qCfg = renderBlock({
+      kind: "question",
+      items: questions,
+      groups: qGroups,
+      tabsSel: "#bm2p-q-tabs",
+      groupsSel: "#bm2p-q-groups",
+      getCat: () => st.qCat,
+      setCat: (v) => { st.qCat = v; }
+    });
+
+    const repaintAll = () => { lecCfg.paint(); qCfg.paint(); };
+
+    wrap.querySelector("#bm2p-q").addEventListener("input", (e) => {
+      st.q = e.target.value.trim().toLowerCase(); repaintAll();
+    });
+    wrap.querySelector("#bm2p-status").addEventListener("change", (e) => {
+      st.status = e.target.value; repaintAll();
+    });
+    wrap.querySelector("#bm2p-sort").addEventListener("change", (e) => {
+      st.sort = e.target.value; repaintAll();
+    });
+
+    wrap.querySelectorAll("[data-scroll]").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const target = wrap.querySelector("#" + btn.dataset.scroll);
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
   }
 
   /* ───────── MEDIA MODAL (video / pdf viewer) ───────── */

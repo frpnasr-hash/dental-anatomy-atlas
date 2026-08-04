@@ -70,6 +70,7 @@ const SECTIONS = [
   { id: "stage2",     label: "Stage 2 Guide",      icon: "🎓", tagline: "Second-year instruments: what to buy, what to skip & smart tips" },
   { id: "prothesis",  label: "Stage 2 Prothesis",  icon: "🪥", tagline: "Practical Prothesis videos, Drive resources, playlists & student guidance — neatly grouped" },
   { id: "biomaterials2", label: "Biomaterials 2",  icon: "🧪", tagline: "Dental Biomaterials 2 · Semester 1 — theoretical lectures for second-year dentistry, organised & premium" },
+  { id: "bm2practical", label: "Biomaterial 2 · Practical", icon: "🔬", tagline: "Dental Biomaterial 2 · Semester 1 — practical lectures & question bank for second-year dentistry, premium & exam-ready" },
   { id: "downloads",  label: "Downloads",         icon: "⬇️", tagline: "Instrument lists, templates & files" },
   { id: "favorites",  label: "Saved",             icon: "⭐", tagline: "Your bookmarked resources" },
   { id: "search",     label: "Search",            icon: "🔍", tagline: "Find anything across the hub" },
@@ -205,9 +206,256 @@ const BIOMATERIALS2_GROUPS = [
   { key: "Pending Review",            icon: "🕵️", title: "Pending Review",           blurb: "Files being verified and organised. They move into the correct group once reviewed." }
 ];
 
+/* ───────── DENTAL BIOMATERIAL 2 · SEMESTER 1 — PRACTICAL ─────────
+   A separate, premium academic section dedicated to the PRACTICAL side of
+   Dental Biomaterial 2 for second-year dentistry. It has two clearly
+   labelled sub-sections rendered on one landing page:
+     1. Practical Lectures  — the 8 practical lecture files.
+     2. Question Bank       — the 3 exam-preparation question files.
+
+   Everything is data-driven. To add a future practical lecture or question
+   file, push a resource whose `section` is "bm2practical" and set its
+   `subsection` to "lectures" or "questions", with a `category` matching one
+   of the group keys below. Nothing else needs to change — new categories can
+   also be added to the group arrays and they appear automatically. */
+const BM2P_META = {
+  courseCode: "DBM 2",
+  courseName: "Dental Biomaterial 2 — Practical",
+  semester: "Semester 1",
+  year: "Second Year",
+  intro: "The practical companion to Dental Biomaterial 2. This section brings together the second-year practical lectures — from applied biomaterials, model & die and denture base materials to dental wax, investment materials and the casting workflow — alongside a dedicated exam-preparation Question Bank. Every file is the official course material, organised into clean academic groups so you can revise fast, practise questions and walk into the lab and the exam fully prepared."
+};
+
+/* Practical Lectures — ordered category groups (filter tabs + titled blocks). */
+const BM2P_LECTURE_GROUPS = [
+  { key: "Material Identification",   icon: "🔎", title: "Material Identification",   blurb: "Introductory practicals that identify the core biomaterials and the restorative workflow." },
+  { key: "Mixing / Manipulation",     icon: "🧪", title: "Mixing & Manipulation",    blurb: "Hands-on manipulation of materials — model & die, resin composite and denture base handling." },
+  { key: "Physical Properties",       icon: "📐", title: "Physical Properties",       blurb: "Practicals focused on the physical behaviour of waxes and related materials." },
+  { key: "Clinical Application",      icon: "🦷", title: "Clinical Application",      blurb: "Applied and laboratory procedures — investment materials, casting machines and casting technology." },
+  { key: "Pending Review",            icon: "🕵️", title: "Pending Review",           blurb: "Files being verified and organised. They move into the correct group once reviewed." }
+];
+
+/* Question Bank — ordered category groups (filter tabs + titled blocks). */
+const BM2P_QUESTION_GROUPS = [
+  { key: "MCQ / SAQ / Review",        icon: "🧠", title: "MCQ / SAQ / Review",        blurb: "Multiple-choice and short-answer questions for full-course revision." },
+  { key: "Short Questions",           icon: "✍️", title: "Short Questions",           blurb: "Fill-in-the-blank and short exam questions focused on key definitions and concepts." },
+  { key: "Exam Questions",            icon: "📋", title: "Exam Questions",            blurb: "Exam-style question sets across the practical topics." },
+  { key: "Pending Review",            icon: "🕵️", title: "Pending Review",           blurb: "Files being verified and organised. They move into the correct group once reviewed." }
+];
+
 /* ───────── RESOURCES ─────────
    The single source of truth. Extend freely. */
 const RESOURCES = [
+
+  /* ══════════ DENTAL BIOMATERIAL 2 · SEMESTER 1 — PRACTICAL (LIVE NOW) ══════════
+     8 practical lecture files + 3 question-bank files for second-year
+     dentistry. Files live under assets/media/pdf/biomaterials2-practical/
+     and open in the in-app PDF viewer modal. Classified via lightweight
+     filename/context cues only. `subsection` splits lectures vs. questions;
+     `category` maps to BM2P_LECTURE_GROUPS / BM2P_QUESTION_GROUPS. */
+
+  /* ── Practical Lectures ── */
+  {
+    id: "bm2p-l01-intro-applied",
+    title: "Introduction to Applied Dental Biomaterial (Practical)",
+    type: "pdf",
+    section: "bm2practical",
+    subsection: "lectures",
+    category: "Material Identification",
+    semester: "Semester 1",
+    description: "Practical orientation to the restorative workflow — examination, diagnosis, planning and material selection, then application of materials such as amalgam, composite and glass ionomer.",
+    link: "assets/media/pdf/biomaterials2-practical/p01-introduction-applied-dental-biomaterials.pdf",
+    file: "assets/media/pdf/biomaterials2-practical/p01-introduction-applied-dental-biomaterials.pdf",
+    thumbnail: "",
+    tags: ["introduction", "workflow", "material selection", "practical", "restorative"],
+    status: "available",
+    featured: true,
+    level: "Level 2",
+    lectureNumber: 1
+  },
+  {
+    id: "bm2p-l02-model-die",
+    title: "Model & Die Materials (Practical)",
+    type: "pdf",
+    section: "bm2practical",
+    subsection: "lectures",
+    category: "Mixing / Manipulation",
+    semester: "Semester 1",
+    description: "Practical handling of gypsum products — calcination, the different gypsum types (plaster, dental stone, die stone) and their manufacturing, properties and uses.",
+    link: "assets/media/pdf/biomaterials2-practical/p02-model-and-die-materials-practical.pdf",
+    file: "assets/media/pdf/biomaterials2-practical/p02-model-and-die-materials-practical.pdf",
+    thumbnail: "",
+    tags: ["gypsum", "model", "die", "stone", "practical"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 2
+  },
+  {
+    id: "bm2p-l03-resin-composite",
+    title: "Resin Composite Restorative Materials (Practical)",
+    type: "pdf",
+    section: "bm2practical",
+    subsection: "lectures",
+    category: "Mixing / Manipulation",
+    semester: "Semester 1",
+    description: "Step-by-step manipulation of resin composite — pulpal protection, acid etching and bonding to enamel, adhesive application and the incremental placement technique.",
+    link: "assets/media/pdf/biomaterials2-practical/p03-resin-composite-restorative-materials-practical.pdf",
+    file: "assets/media/pdf/biomaterials2-practical/p03-resin-composite-restorative-materials-practical.pdf",
+    thumbnail: "",
+    tags: ["composite", "etching", "bonding", "manipulation", "practical"],
+    status: "available",
+    featured: true,
+    level: "Level 2",
+    lectureNumber: 3
+  },
+  {
+    id: "bm2p-l04-denture-base",
+    title: "Denture Base Materials (Practical)",
+    type: "pdf",
+    section: "bm2practical",
+    subsection: "lectures",
+    category: "Mixing / Manipulation",
+    semester: "Semester 1",
+    description: "Practical manipulation of heat-cured PMMA denture base — powder/liquid ratio, mixing stages, packing and processing steps for constructing a complete denture.",
+    link: "assets/media/pdf/biomaterials2-practical/p04-denture-base-materials-practical.pdf",
+    file: "assets/media/pdf/biomaterials2-practical/p04-denture-base-materials-practical.pdf",
+    thumbnail: "",
+    tags: ["denture base", "PMMA", "mixing", "processing", "practical"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 4
+  },
+  {
+    id: "bm2p-l05-dental-wax",
+    title: "Dental Wax (Practical)",
+    type: "pdf",
+    section: "bm2practical",
+    subsection: "lectures",
+    category: "Physical Properties",
+    semester: "Semester 1",
+    description: "Composition, classification and physical properties of dental waxes — natural and synthetic components, thermal behaviour and their clinical and laboratory uses.",
+    link: "assets/media/pdf/biomaterials2-practical/p05-dental-wax-practical.pdf",
+    file: "assets/media/pdf/biomaterials2-practical/p05-dental-wax-practical.pdf",
+    thumbnail: "",
+    tags: ["wax", "properties", "composition", "practical"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 5
+  },
+  {
+    id: "bm2p-l06-investment",
+    title: "Investment Materials (Practical)",
+    type: "pdf",
+    section: "bm2practical",
+    subsection: "lectures",
+    category: "Clinical Application",
+    semester: "Semester 1",
+    description: "Investment materials used to make a mould for casting — from the wax pattern and sprue through the crucible former, ring and investment, illustrated step by step.",
+    link: "assets/media/pdf/biomaterials2-practical/p06-investment-materials-practical.pdf",
+    file: "assets/media/pdf/biomaterials2-practical/p06-investment-materials-practical.pdf",
+    thumbnail: "",
+    tags: ["investment", "mould", "sprue", "casting", "practical"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 6
+  },
+  {
+    id: "bm2p-l07-casting-machines",
+    title: "Casting Machines (Practical)",
+    type: "pdf",
+    section: "bm2practical",
+    subsection: "lectures",
+    category: "Clinical Application",
+    semester: "Semester 1",
+    description: "Casting machines and technique — air-pressure and centrifugal casting machines, the role of fluxes, and how the molten alloy is forced into the mould.",
+    link: "assets/media/pdf/biomaterials2-practical/p07-casting-machines-practical.pdf",
+    file: "assets/media/pdf/biomaterials2-practical/p07-casting-machines-practical.pdf",
+    thumbnail: "",
+    tags: ["casting machine", "centrifugal", "flux", "alloy", "practical"],
+    status: "available",
+    featured: true,
+    level: "Level 2",
+    lectureNumber: 7
+  },
+  {
+    id: "bm2p-l08-casting-technology",
+    title: "Casting Technology (Practical)",
+    type: "pdf",
+    section: "bm2practical",
+    subsection: "lectures",
+    category: "Clinical Application",
+    semester: "Semester 1",
+    description: "The lost-wax casting workflow in practice — making the wax pattern, spruing, investing, burnout, casting, devesting and finishing an alloy restoration.",
+    link: "assets/media/pdf/biomaterials2-practical/p08-casting-technology-practical.pdf",
+    file: "assets/media/pdf/biomaterials2-practical/p08-casting-technology-practical.pdf",
+    thumbnail: "",
+    tags: ["casting", "lost-wax", "burnout", "spruing", "practical"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 8
+  },
+
+  /* ── Question Bank ── */
+  {
+    id: "bm2p-q01-mcq-composite",
+    title: "MCQ — Restorative & Composite Materials",
+    type: "pdf",
+    section: "bm2practical",
+    subsection: "questions",
+    category: "MCQ / SAQ / Review",
+    semester: "Semester 1",
+    description: "Multiple-choice question set covering dental composite fillers, resin matrix monomers, cements, pulp capping and related restorative topics — ideal for quick self-testing.",
+    link: "assets/media/pdf/biomaterials2-practical/q01-mcq-restorative-and-composite.pdf",
+    file: "assets/media/pdf/biomaterials2-practical/q01-mcq-restorative-and-composite.pdf",
+    thumbnail: "",
+    tags: ["mcq", "composite", "cements", "exam", "revision"],
+    status: "available",
+    featured: true,
+    level: "Level 2",
+    lectureNumber: 1
+  },
+  {
+    id: "bm2p-q02-mcq-gypsum-casting",
+    title: "MCQ — Gypsum, Casting & Materials",
+    type: "pdf",
+    section: "bm2practical",
+    subsection: "questions",
+    category: "MCQ / SAQ / Review",
+    semester: "Semester 1",
+    description: "Multiple-choice questions on gypsum chemistry, accelerators and retarders, the wax pattern and sprue, setting reactions and dental ceramics — broad practical-course revision.",
+    link: "assets/media/pdf/biomaterials2-practical/q02-mcq-gypsum-casting-and-materials.pdf",
+    file: "assets/media/pdf/biomaterials2-practical/q02-mcq-gypsum-casting-and-materials.pdf",
+    thumbnail: "",
+    tags: ["mcq", "gypsum", "casting", "ceramics", "exam"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 2
+  },
+  {
+    id: "bm2p-q03-impression-short",
+    title: "Short Questions — Impression Materials",
+    type: "pdf",
+    section: "bm2practical",
+    subsection: "questions",
+    category: "Short Questions",
+    semester: "Semester 1",
+    description: "Fill-in-the-blank and short-answer questions on impression materials — working and setting time, elastic properties, dimensional stability, flow and hydrophilicity.",
+    link: "assets/media/pdf/biomaterials2-practical/q03-impression-materials-short-questions.pdf",
+    file: "assets/media/pdf/biomaterials2-practical/q03-impression-materials-short-questions.pdf",
+    thumbnail: "",
+    tags: ["short questions", "impression", "fill-in-the-blank", "exam", "revision"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 3
+  },
+
 
   /* ══════════ DENTAL BIOMATERIALS 2 · SEMESTER 1 (LIVE NOW) ══════════
      15 official theoretical lecture PDFs for second-year dentistry.
@@ -1012,5 +1260,8 @@ window.STAGE2_GUIDE = STAGE2_GUIDE;
 window.PROTHESIS_GROUPS = PROTHESIS_GROUPS;
 window.BIOMATERIALS2_META = BIOMATERIALS2_META;
 window.BIOMATERIALS2_GROUPS = BIOMATERIALS2_GROUPS;
+window.BM2P_META = BM2P_META;
+window.BM2P_LECTURE_GROUPS = BM2P_LECTURE_GROUPS;
+window.BM2P_QUESTION_GROUPS = BM2P_QUESTION_GROUPS;
 window.RESOURCES = RESOURCES;
 window.DataAPI = DataAPI;
