@@ -1252,7 +1252,83 @@ const DataAPI = {
   }
 };
 
+/* ═══════════════════════════════════════════════════════════════
+   PREMIUM ENHANCEMENT LAYER — DATA (additive, non-breaking)
+   Powers the Smart Top Bar, Featured Today, Study Mode, Quick Tiles,
+   Smart Filters, Progress panel, Pinned resources, Exam Zone and the
+   Daily Tip card. Everything here is OPTIONAL metadata — the original
+   hub keeps working exactly as before even if this block is removed.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Daily / rotating academic tips shown in the Daily Tip card. A new tip
+   is selected each day (and can be shuffled by the user). Add freely. */
+const DAILY_TIPS = [
+  { icon: "🧠", tag: "Study Tip",   text: "Use active recall: close the PDF and try to explain the topic out loud before re-reading. It beats passive highlighting every time." },
+  { icon: "⏱️", tag: "Focus",       text: "Try the 25/5 Pomodoro rhythm — 25 minutes deep study, 5 minutes rest. Turn on Study Mode to kill distractions." },
+  { icon: "🦷", tag: "Anatomy",     text: "Memorise teeth by chronology of eruption, not just numbers — it makes the FDI, Universal and Palmer systems click together." },
+  { icon: "🧪", tag: "Biomaterials", text: "For impression materials, always link a property to a clinical reason: why does hydrophilicity matter at the margin?" },
+  { icon: "📝", tag: "Exam Prep",   text: "Turn every lecture objective into a question. If you can answer all objectives, you can answer the exam." },
+  { icon: "🔁", tag: "Revision",    text: "Space your revision: review new material after 1 day, 3 days, then 7 days to lock it into long-term memory." },
+  { icon: "🪥", tag: "Practical",   text: "For wax-up, work slow and cool — reheat little, carve often. Rushing melts your anatomy and wastes wax." },
+  { icon: "⭐", tag: "Workflow",    text: "Save (★) the resources you use most, then open them instantly from the Saved tab or the top bar." },
+  { icon: "📚", tag: "Organisation", text: "Before an exam, build a personal 'Exam Zone' by saving only your highest-yield PDFs and question files." },
+  { icon: "💧", tag: "Wellbeing",   text: "Hydration and sleep beat one extra all-nighter. A rested brain recalls anatomy far better than a tired one." },
+  { icon: "🎯", tag: "Strategy",    text: "Attempt questions BEFORE you feel ready. Struggling first, then checking, cements the answer far more deeply." },
+  { icon: "🧵", tag: "Elastomers",  text: "Remember the elastomer accuracy order (polyether ≈ addition silicone) by linking it to dimensional stability on storage." }
+];
+
+/* Featured Today rotation — a lightweight, opinionated list of item ids
+   the homepage can spotlight. If empty, the enhancement layer falls back
+   to `featured:true` resources automatically, so this is fully optional. */
+const FEATURED_TODAY = {
+  tips: true,          // include a rotating study tip in the spotlight
+  preferSections: ["biomaterials2", "bm2practical", "prothesis", "anatomy", "video", "pdf"]
+};
+
+/* Quick Access Tiles — bold entry points on the homepage. Each tile maps
+   to an existing section id (so navigation reuses the working router) or a
+   built-in virtual view ("exam"). Order here defines display order. */
+const QUICK_TILES = [
+  { section: "anatomy",       icon: "🦷", label: "Dental Anatomy",   accent: "blue"   },
+  { section: "biomaterials2", icon: "🧪", label: "Biomaterials",     accent: "orange" },
+  { section: "prothesis",     icon: "🪥", label: "Prothesis",        accent: "blue"   },
+  { section: "pdf",           icon: "📚", label: "PDFs",             accent: "orange" },
+  { section: "video",         icon: "🎬", label: "Videos",           accent: "blue"   },
+  { section: "telegram",      icon: "✈️", label: "Telegram",         accent: "orange" },
+  { section: "bm2practical",  icon: "🧠", label: "Questions",        accent: "blue"   },
+  { section: "downloads",     icon: "⬇️", label: "Downloads",        accent: "orange" },
+  { section: "stage2",        icon: "🎓", label: "Stage 2",          accent: "blue"   },
+  { section: "exam",          icon: "🚨", label: "Exam Prep",        accent: "orange" }
+];
+
+/* Exam Zone configuration — a dedicated, high-pressure revision view.
+   It pulls the most useful available resources (question banks, pinned &
+   featured PDFs) automatically, plus these curated quick links. */
+const EXAM_ZONE = {
+  intro: "Your last-minute revision command centre. Everything here is picked for speed: question banks, high-yield PDFs and fast-review material. Flip on Study Mode, save what matters, and revise with zero distractions.",
+  // Resource ids to always surface first in the Exam Zone if present.
+  priorityIds: [
+    "bm2p-q01-mcq-composite", "bm2p-q02-mcq-gypsum-casting", "bm2p-q03-impression-short",
+    "bm2p-l01-intro-applied", "bm2p-l03-resin-composite"
+  ],
+  // Preferred sections mined for exam-ready material.
+  examSections: ["bm2practical", "biomaterials2", "pdf", "quizzes"]
+};
+
+/* Optional: mark specific resource ids as PINNED so they float to the top
+   of their section and get a highlighted ring. This does NOT modify the
+   RESOURCES array — it is read by the enhancement layer only. */
+const PINNED_IDS = [
+  "bm2p-q01-mcq-composite",
+  "bm2p-l01-intro-applied"
+];
+
 /* Expose to window for non-module usage */
+window.DAILY_TIPS = DAILY_TIPS;
+window.FEATURED_TODAY = FEATURED_TODAY;
+window.QUICK_TILES = QUICK_TILES;
+window.EXAM_ZONE = EXAM_ZONE;
+window.PINNED_IDS = PINNED_IDS;
 window.SITE = SITE;
 window.SECTIONS = SECTIONS;
 window.CATEGORIES = CATEGORIES;
