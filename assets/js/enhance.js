@@ -2,11 +2,12 @@
    DENTOVERSE — PREMIUM ENHANCEMENT LAYER (ENGINE)
    Additive, non-destructive upgrades that sit on top of the existing
    hub.js router without modifying it. Adds:
-     1) Smart Top Navigation Bar   2) Featured Today
-     3) Study Mode                 4) Quick Access Tiles
-     5) Smart Filters              6) Progress / Completion
-     7) Pinned Resources           8) Student Tools
-     9) Exam Zone                 10) Daily Tip Card
+     1) Smart Top Navigation Bar   2) Dark / Light Theme Toggle
+     3) Study Mode                 4) Daily Practical (top-bar tip popover)
+     5) Smart Filters              6) Pinned Resources
+     7) Student Tools              8) Exam Zone
+   The homepage itself is kept intentionally clean — it flows straight from
+   the hero into the original "Explore the Hub → All Libraries" structure.
    Everything is wrapped defensively — if any DataAPI/DentoVerse hook is
    missing the layer degrades gracefully and the base site keeps working.
    Designed & Produced by Abdel Rahman Teba © ®
@@ -21,7 +22,9 @@
   const LS = {
     study:      "dentoverse_studymode_v1",
     important:  "dentoverse_important_v1",
-    tipIndex:   "dentoverse_tip_v1"
+    tipIndex:   "dentoverse_tip_v1",
+    theme:      "dentoverse_theme_v1",
+    practical:  "dentoverse_practical_v1"
   };
 
   /* ───────── tiny helpers ───────── */
@@ -103,7 +106,11 @@
         <div class="enh-act" data-enh-go="favorites"><span class="ea-ico">⭐</span><span class="ea-label">Favorites</span><span class="ea-badge" data-enh-fav>0</span></div>
         <div class="enh-act" data-enh-go="downloads"><span class="ea-ico">⬇️</span><span class="ea-label">Downloads</span></div>
         <div class="enh-act" data-enh-go="exam"><span class="ea-ico">🚨</span><span class="ea-label">Exam Zone</span></div>
+        <div class="enh-act" data-enh-practical title="Show a practical dentistry tip"><span class="ea-ico">💡</span><span class="ea-label">Daily Practical</span></div>
         <div class="enh-act" data-enh-go="about"><span class="ea-ico">✉️</span><span class="ea-label">Contact</span></div>
+        <div class="enh-act enh-theme-toggle" data-enh-theme title="Switch between dark and light mode" role="button" aria-label="Toggle dark / light mode">
+          <span class="ea-ico enh-theme-ico">🌙</span><span class="ea-label enh-theme-label">Dark</span>
+        </div>
         <div class="enh-jump-wrap">
           <div class="enh-act" data-enh-jump><span class="ea-ico">⚡</span><span class="ea-label">Quick Jump</span> ▾</div>
           <div class="enh-jump-menu" id="enh-jump-menu">
@@ -127,9 +134,12 @@
     bar.addEventListener("click", (e) => {
       const goEl = e.target.closest("[data-enh-go]");
       if (goEl) { jumpMenu.classList.remove("open"); go(goEl.dataset.enhGo); return; }
+      if (e.target.closest("[data-enh-theme]")) { toggleTheme(); return; }
+      if (e.target.closest("[data-enh-practical]")) { showDailyPractical(); return; }
       if (e.target.closest("[data-enh-study]")) toggleStudyMode();
     });
 
+    syncThemeButton();
     syncFavBadge();
   }
 
@@ -154,6 +164,109 @@
     toast(on ? "Study Mode on — distractions dimmed" : "Study Mode off", on ? "📖" : "✨", on);
   }
   function initStudyMode() { if (readJSON(LS.study, false) === true) applyStudyMode(true); }
+
+  /* ═══════ DARK / LIGHT THEME TOGGLE ═══════
+     Adds a clean, elegant light theme on top of the default dark cosmic
+     theme. The preference is saved locally so it survives page refresh.
+     Colours stay inside the site's futuristic blue / white / orange / black
+     palette — the light mode is a bright, airy variant of the same system. */
+  function currentTheme() { return document.body.classList.contains("theme-light") ? "light" : "dark"; }
+  function applyTheme(theme) {
+    const light = theme === "light";
+    document.body.classList.toggle("theme-light", light);
+    document.documentElement.classList.toggle("theme-light", light);
+    syncThemeButton();
+  }
+  function syncThemeButton() {
+    const light = currentTheme() === "light";
+    document.querySelectorAll(".enh-theme-ico").forEach(i => i.textContent = light ? "☀️" : "🌙");
+    document.querySelectorAll(".enh-theme-label").forEach(l => l.textContent = light ? "Light" : "Dark");
+    document.querySelectorAll("[data-enh-theme]").forEach(b => b.classList.toggle("on", light));
+  }
+  function toggleTheme() {
+    const next = currentTheme() === "light" ? "dark" : "light";
+    applyTheme(next);
+    writeJSON(LS.theme, next);
+    toast(next === "light" ? "Light mode on" : "Dark mode on", next === "light" ? "☀️" : "🌙");
+  }
+  function initTheme() {
+    const saved = readJSON(LS.theme, "dark");
+    applyTheme(saved === "light" ? "light" : "dark");
+  }
+
+  /* ═══════ DAILY PRACTICAL ═══════
+     A single, elegant popover that surfaces a practical / study tip or a
+     short dentistry-related note. Content rotates by day, and each click
+     advances to the next note so it also works "randomly" on demand. */
+  function practicalIndex() {
+    if (!TIPS.length) return 0;
+    const day = Math.floor(Date.now() / 86400000);
+    const offset = readJSON(LS.practical, 0);
+    return (((day + offset) % TIPS.length) + TIPS.length) % TIPS.length;
+  }
+  let practicalCard;
+  function showDailyPractical() {
+    if (!TIPS.length) { toast("A practical tip is on its way", "💡", true); return; }
+
+    // Toggle off if already open
+    if (practicalCard && document.body.contains(practicalCard)) {
+      closeDailyPractical();
+      return;
+    }
+
+    const render = () => {
+      const t = TIPS[practicalIndex()];
+      practicalCard.innerHTML = `
+        <div class="enh-practical-head">
+          <span class="enh-practical-eyebrow">💡 Daily Practical</span>
+          <button class="enh-practical-close" type="button" aria-label="Close">✕</button>
+        </div>
+        <div class="enh-practical-body">
+          <div class="enh-practical-ico">${t.icon || "💡"}</div>
+          <div>
+            <div class="enh-practical-tag">${esc(t.tag || "Tip")}</div>
+            <p class="enh-practical-text">${esc(t.text)}</p>
+          </div>
+        </div>
+        <div class="enh-practical-foot">
+          <button class="enh-practical-next" type="button">↻ Another practical</button>
+        </div>`;
+      practicalCard.querySelector(".enh-practical-close")
+        .addEventListener("click", closeDailyPractical);
+      practicalCard.querySelector(".enh-practical-next")
+        .addEventListener("click", () => {
+          writeJSON(LS.practical, readJSON(LS.practical, 0) + 1);
+          render();
+        });
+    };
+
+    practicalCard = el("div", "enh-practical-pop");
+    document.body.appendChild(practicalCard);
+    render();
+    requestAnimationFrame(() => practicalCard.classList.add("show"));
+
+    // Dismiss on outside click / Escape
+    setTimeout(() => {
+      document.addEventListener("click", onPracticalOutside, true);
+      document.addEventListener("keydown", onPracticalKey);
+    }, 0);
+  }
+  function closeDailyPractical() {
+    if (!practicalCard) return;
+    practicalCard.classList.remove("show");
+    const node = practicalCard;
+    practicalCard = null;
+    document.removeEventListener("click", onPracticalOutside, true);
+    document.removeEventListener("keydown", onPracticalKey);
+    setTimeout(() => { if (node && node.parentNode) node.remove(); }, 260);
+  }
+  function onPracticalOutside(e) {
+    if (!practicalCard) return;
+    if (practicalCard.contains(e.target)) return;
+    if (e.target.closest("[data-enh-practical]")) return; // handled by toggle
+    closeDailyPractical();
+  }
+  function onPracticalKey(e) { if (e.key === "Escape") closeDailyPractical(); }
 
   /* ═══════ 10) DAILY TIP CARD ═══════ */
   function dayIndex() {
@@ -359,22 +472,15 @@
   }
 
   /* ═══════ HOME INJECTION ═══════
-     After hub.js renders home, we prepend the premium blocks in order:
-     Featured Today → Quick Tiles → Progress → Daily Tip. We insert them
-     right after the hero so the original "All Libraries" grid stays intact. */
+     The homepage is intentionally kept short and clean: it flows straight
+     from the hero into the original "Explore the Hub → All Libraries"
+     structure rendered by hub.js. The former Featured Today, Quick Access
+     and "DentoVerse at a glance" blocks have been removed from the home
+     view (their builders remain available for other views such as the
+     Exam Zone). No premium blocks are injected into the homepage. */
   function enhanceHome() {
-    const viewRoot = document.getElementById("view");
-    if (!viewRoot) return;
-    const hero = viewRoot.querySelector(".hub-hero");
-    if (!hero || viewRoot.querySelector(".enh-featured-today")) return; // already enhanced
-
-    const frag = document.createDocumentFragment();
-    const ft = featuredTodaySection(); if (ft) frag.appendChild(ft);
-    const tiles = tilesSection(); if (tiles) frag.appendChild(tiles);
-    const prog = progressSection(); if (prog) frag.appendChild(prog);
-    const tip = tipCard(); if (tip) frag.appendChild(tip);
-
-    hero.after(frag);
+    /* Nothing is injected into the homepage anymore — the original clean
+       hero + All Libraries flow is preserved exactly as hub.js renders it. */
   }
 
   /* ═══════ 5) SMART FILTERS + 7) PINNED + 8) STUDENT TOOLS ═══════ */
@@ -714,6 +820,7 @@
 
   /* ═══════ BOOT ═══════ */
   function boot() {
+    initTheme();
     buildTopBar();
     initStudyMode();
     observeView();
@@ -728,5 +835,5 @@
     boot();
   }
 
-  window.DentoVerseEnhance = { toggleStudyMode, renderExamZone, toast };
+  window.DentoVerseEnhance = { toggleStudyMode, renderExamZone, toast, toggleTheme, showDailyPractical };
 })();
