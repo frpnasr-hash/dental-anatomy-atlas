@@ -358,21 +358,10 @@
     catSec.appendChild(catGrid);
     root.appendChild(catSec);
 
-    // Featured row
-    const featured = DataAPI.featured();
-    if (featured.length) {
-      const fSec = el("section", "section");
-      fSec.innerHTML = `
-        <div class="section-header">
-          <div class="section-tag">◆ FEATURED</div>
-          <h2 class="section-title">⭐ Highlights</h2>
-          <p class="section-desc">Hand-picked resources available right now.</p>
-        </div>`;
-      const grid = el("div", "res-grid");
-      featured.forEach(r => grid.appendChild(resourceCard(r)));
-      fSec.appendChild(grid);
-      root.appendChild(fSec);
-    }
+    // NOTE: The former "⭐ Highlights" (Featured) section was removed to keep
+    // the homepage short, clean and easy to navigate. The homepage now flows
+    // straight from the DentoVerse hero into the "Explore the Hub → All
+    // Libraries" grid, with no long trailing block.
   }
 
   /* ───────── ANATOMY (bridge to sub-app) ───────── */
