@@ -415,6 +415,144 @@
 @keyframes novaToastIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @keyframes novaToastOut { to { opacity: 0; transform: translateY(12px); } }
 
+/* ═══════════════════════════════════════════════════════════════
+   NOVA v2 ADDITIONS — controls, sources, feedback, markdown, RTL
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── typing label next to dots ── */
+.nova-typing-label {
+  margin-left: .5rem; font-size: .74rem; color: var(--sky, #8bc9ff);
+  vertical-align: middle; opacity: .85;
+}
+.nova-panel.rtl .nova-typing-label { margin-left: 0; margin-right: .5rem; }
+
+/* ── controls row (answer mode + web toggle) ── */
+.nova-controls {
+  position: relative; z-index: 2;
+  display: flex; align-items: center; gap: .5rem;
+  padding: .35rem .9rem .1rem;
+}
+.nova-ctl {
+  display: inline-flex; align-items: center; gap: .4rem;
+  font-size: .68rem; font-weight: 700; letter-spacing: .3px;
+  text-transform: uppercase;
+  color: rgba(139,201,255,.7);
+}
+.nova-mode {
+  font-family: var(--font-body, sans-serif);
+  font-size: .78rem; font-weight: 600;
+  padding: .32rem .5rem; border-radius: 10px; cursor: pointer;
+  background: rgba(0,8,20,.6); color: var(--off-white,#e8f4ff);
+  border: 1px solid var(--nova-border); outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.nova-mode:focus { border-color: var(--nova-border-strong); box-shadow: 0 0 0 3px rgba(0,212,255,.12); }
+.nova-mode option { background: #04122a; color: #e8f4ff; }
+.nova-web-toggle {
+  margin-left: auto;
+  display: inline-flex; align-items: center; gap: .4rem;
+  font-family: var(--font-body, sans-serif);
+  font-size: .76rem; font-weight: 700; letter-spacing: .3px;
+  padding: .34rem .6rem; border-radius: 20px; cursor: pointer;
+  background: rgba(0,20,40,.5); color: rgba(139,201,255,.8);
+  border: 1px solid var(--nova-border);
+  transition: background .2s, border-color .2s, color .2s, transform .15s;
+}
+.nova-panel.rtl .nova-web-toggle { margin-left: 0; margin-right: auto; }
+.nova-web-toggle:hover { transform: translateY(-1px); border-color: var(--nova-border-strong); }
+.nova-web-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(139,201,255,.4);
+  box-shadow: 0 0 0 rgba(0,212,255,0);
+  transition: background .2s, box-shadow .2s;
+}
+.nova-web-toggle.on {
+  color: #38ff9e; border-color: rgba(56,255,158,.5);
+  background: rgba(56,255,158,.1);
+}
+.nova-web-toggle.on .nova-web-dot { background: #38ff9e; box-shadow: 0 0 10px #38ff9e; }
+
+/* ── markdown-rendered AI answers ── */
+.nova-md p { margin: 0 0 .5rem; }
+.nova-md p:last-child { margin-bottom: 0; }
+.nova-md ol.nova-olist { margin: .4rem 0 .4rem 1.1rem; padding: 0; display: grid; gap: .3rem; }
+.nova-md ol.nova-olist li { font-size: .87rem; }
+.nova-md ul.nova-list { margin: .4rem 0; }
+.nova-md code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: .82em; padding: .1rem .35rem; border-radius: 6px;
+  background: rgba(0,212,255,.12); color: #9fe6ff;
+  border: 1px solid rgba(0,212,255,.18);
+}
+.nova-md pre.nova-code {
+  margin: .5rem 0; padding: .7rem .8rem; border-radius: 12px;
+  background: rgba(0,8,20,.7); border: 1px solid var(--nova-border);
+  overflow-x: auto; font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: .8rem; line-height: 1.5; color: #cfeaff;
+  white-space: pre-wrap; word-break: break-word;
+}
+.nova-md a { color: var(--electric-blue,#00d4ff); text-decoration: underline; text-underline-offset: 2px; }
+.nova-md a:hover { color: var(--orange-glow,#ffab5c); }
+
+/* ── web source cards ── */
+.nova-sources {
+  margin-top: .2rem; padding: .6rem .7rem; border-radius: 13px;
+  background: linear-gradient(160deg, rgba(0,53,102,.28), rgba(0,20,40,.45));
+  border: 1px solid var(--nova-border);
+  display: flex; flex-direction: column; gap: .4rem;
+}
+.nova-sources-title {
+  font-size: .68rem; font-weight: 800; letter-spacing: .5px; text-transform: uppercase;
+  color: var(--sky,#8bc9ff);
+}
+.nova-source {
+  display: flex; align-items: center; gap: .55rem;
+  padding: .4rem .5rem; border-radius: 10px;
+  text-decoration: none; color: var(--off-white,#e8f4ff);
+  border: 1px solid rgba(0,212,255,.14);
+  background: rgba(0,20,40,.4);
+  transition: background .2s, border-color .2s, transform .15s;
+}
+.nova-source:hover { background: rgba(0,212,255,.12); border-color: var(--nova-border-strong); transform: translateX(2px); }
+.nova-panel.rtl .nova-source:hover { transform: translateX(-2px); }
+.nova-source-i {
+  flex-shrink: 0; width: 20px; height: 20px; border-radius: 6px;
+  display: grid; place-items: center; font-size: .68rem; font-weight: 800;
+  background: rgba(0,212,255,.18); color: #9fe6ff;
+}
+.nova-source-t { min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.nova-source-t strong { font-size: .82rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nova-source-t em { font-size: .68rem; font-style: normal; color: var(--sky,#8bc9ff); }
+
+/* ── feedback bar ── */
+.nova-feedback {
+  display: flex; align-items: center; gap: .4rem;
+  margin: .15rem 0 0 2.4rem;
+  font-size: .72rem; color: rgba(139,201,255,.7);
+  animation: novaIn .4s ease both;
+}
+.nova-msg.rtl + .nova-feedback, .nova-panel.rtl .nova-feedback { margin: .15rem 2.4rem 0 0; }
+.nova-fb-q { opacity: .85; }
+.nova-fb {
+  border: 1px solid var(--nova-border); background: rgba(0,20,40,.5);
+  border-radius: 8px; padding: .12rem .4rem; cursor: pointer; font-size: .82rem;
+  transition: background .2s, transform .15s, border-color .2s;
+}
+.nova-fb:hover:not(:disabled) { background: rgba(0,212,255,.14); transform: translateY(-1px); border-color: var(--nova-border-strong); }
+.nova-fb:disabled { opacity: .45; cursor: default; }
+.nova-fb.chosen { background: rgba(56,255,158,.16); border-color: rgba(56,255,158,.5); opacity: 1; }
+
+/* ── RTL (Arabic) tuning ── */
+.nova-panel.rtl .nova-head-txt h3,
+.nova-panel.rtl .nova-status { direction: rtl; }
+.nova-panel.rtl .nova-input input { text-align: right; }
+.nova-bubble[dir="rtl"], .nova-reply-text[dir="rtl"] { direction: rtl; text-align: right; }
+.nova-bubble[dir="rtl"] .nova-list,
+.nova-reply-text[dir="rtl"] .nova-list { padding-right: 0; }
+.nova-msg.rtl.user { flex-direction: row; }
+.nova-msg.rtl.bot { flex-direction: row-reverse; }
+.nova-msg.rtl.bot .nova-bubble { border-bottom-left-radius: 16px; border-bottom-right-radius: 5px; }
+
 /* ═══════ RESPONSIVE ═══════ */
 @media (max-width: 560px) {
   .nova-fab { right: 16px; bottom: 16px; }
