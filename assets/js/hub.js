@@ -275,6 +275,7 @@
     if (sec === "prothesis") return renderProthesis(root);
     if (sec === "biomaterials2") return renderBiomaterials2(root);
     if (sec === "bm2practical") return renderBM2Practical(root);
+    if (sec === "oralbio") return renderOralBio(root);
 
     // Generic data-driven section
     const wrap = el("section", "section");
@@ -767,6 +768,195 @@
     });
     wrap.querySelector("#bm2-sort").addEventListener("change", (e) => {
       b2state.sort = e.target.value; paint();
+    });
+
+    // Smooth-scroll hero buttons (avoid changing the route hash).
+    wrap.querySelectorAll("[data-scroll]").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const target = wrap.querySelector("#" + btn.dataset.scroll);
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+
+    buildTabs();
+    paint();
+  }
+
+  /* ───────── ORAL BIOLOGY · SEMESTER 1 (premium landing) ─────────
+     A dedicated, premium academic landing page for the second-year Oral
+     Biology theoretical lectures. Fully data-driven — reads the oralbio
+     resources and the ORALBIO_* meta/group definitions from data.js, and
+     reuses the shared biomatCard, favorites store and media modal. */
+  function renderOralBio(root) {
+    const meta = window.ORALBIO_META || {};
+    const groups = window.ORALBIO_GROUPS || [];
+    const all = DataAPI.bySection("oralbio");
+    const available = all.filter(r => r.status === "available").length;
+    const pending = all.filter(r => r.status !== "available").length;
+    const total = all.length;
+    const pct = total ? Math.round((available / total) * 100) : 0;
+
+    // Only show groups that actually contain resources (keeping the scalable
+    // definition list intact for future additions).
+    const activeGroups = groups.filter(g => all.some(r => r.category === g.key));
+    const contact = (window.SITE && SITE.contact) || {};
+
+    const wrap = el("section", "section bm2 oralbio");
+    wrap.innerHTML = `
+      <!-- Hero banner -->
+      <header class="bm2-hero glass-panel">
+        <div class="bm2-hero-glow"></div>
+        <div class="bm2-hero-content">
+          <div class="bm2-badges">
+            <span class="bm2-badge primary">🔬 ${escapeHtml(meta.courseCode || "Oral Biology")}</span>
+            <span class="bm2-badge">${escapeHtml(meta.semester || "Semester 1")}</span>
+            <span class="bm2-badge">${escapeHtml(meta.year || "Second Year")}</span>
+          </div>
+          <h1 class="bm2-hero-title">${escapeHtml(meta.courseName || "Oral Biology")}</h1>
+          <p class="bm2-hero-sub">${escapeHtml(meta.intro || "")}</p>
+          <div class="bm2-chips">
+            <span class="bm2-chip"><span class="chip-num">${total}</span> Lectures</span>
+            <span class="bm2-chip avail"><span class="chip-num">${available}</span> Available</span>
+            <span class="bm2-chip"><span class="chip-num">${activeGroups.length}</span> Topics</span>
+            ${pending ? `<span class="bm2-chip pending"><span class="chip-num">${pending}</span> Pending</span>` : ""}
+          </div>
+          <div class="bm2-progress">
+            <div class="bm2-progress-head">
+              <span>Course Materials Uploaded</span><span>${pct}%</span>
+            </div>
+            <div class="bm2-progress-track"><div class="bm2-progress-fill" style="width:${pct}%"></div></div>
+          </div>
+          <div class="bm2-hero-actions">
+            <button class="btn btn-primary" data-scroll="ob-lectures"><span>📚 Browse Lectures</span></button>
+            <button class="btn btn-secondary" data-scroll="ob-contact"><span>✉️ Request Materials</span></button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Controls: search + category tabs -->
+      <div id="ob-lectures" class="bm2-controls">
+        <div class="bm2-search">
+          <span class="fs-icon">🔍</span>
+          <input type="text" id="ob-q" placeholder="Search lectures by title, topic, tag or description…" />
+        </div>
+        <div class="bm2-filter-row">
+          <select class="filter-select" id="ob-status">
+            <option value="">Any status</option>
+            <option value="available">Available</option>
+            <option value="coming-soon">Coming Soon</option>
+            <option value="pending-review">Pending Review</option>
+          </select>
+          <select class="filter-select" id="ob-sort">
+            <option value="num">Lecture order</option>
+            <option value="az">A → Z</option>
+            <option value="za">Z → A</option>
+          </select>
+        </div>
+      </div>
+      <div class="bm2-tabs" id="ob-tabs"></div>
+
+      <!-- Grouped lecture grid -->
+      <div class="bm2-groups" id="ob-groups"></div>
+
+      <!-- Contact / request materials -->
+      <div id="ob-contact" class="bm2-contact glass-panel">
+        <div class="bm2-contact-icon">✉️</div>
+        <div class="bm2-contact-text">
+          <h3>Need a Lecture or Missing a File?</h3>
+          <p>Reach out directly to request course materials, report a broken file or ask a question about ${escapeHtml(meta.courseName || "Oral Biology")}.</p>
+        </div>
+        <div class="bm2-contact-actions">
+          ${contact.telegram ? `<a class="contact-btn tg" href="${escapeHtml(contact.telegram)}" target="_blank" rel="noopener">✈️ Telegram${contact.telegramUser ? " " + escapeHtml(contact.telegramUser) : ""}</a>` : ""}
+          ${contact.whatsapp ? `<a class="contact-btn grp" href="${escapeHtml(contact.whatsapp)}" target="_blank" rel="noopener">💬 WhatsApp${contact.phoneDisplay ? " " + escapeHtml(contact.phoneDisplay) : ""}</a>` : ""}
+        </div>
+      </div>`;
+    root.appendChild(wrap);
+
+    const tabsHolder = wrap.querySelector("#ob-tabs");
+    const groupsHolder = wrap.querySelector("#ob-groups");
+
+    const obstate = { cat: "all", q: "", status: "", sort: "num" };
+
+    // Build category tabs (All + one per active group, with counts).
+    const buildTabs = () => {
+      tabsHolder.innerHTML = "";
+      const mkTab = (key, icon, label, count) => {
+        const t = el("button", "bm2-tab" + (obstate.cat === key ? " active" : ""));
+        t.dataset.cat = key;
+        t.innerHTML = `${icon ? `<span class="bm2-tab-icon">${icon}</span>` : ""}<span>${escapeHtml(label)}</span><span class="bm2-tab-count">${count}</span>`;
+        t.addEventListener("click", () => { obstate.cat = key; buildTabs(); paint(); });
+        tabsHolder.appendChild(t);
+      };
+      mkTab("all", "✦", "All", all.length);
+      activeGroups.forEach(g => {
+        const c = all.filter(r => r.category === g.key).length;
+        mkTab(g.key, g.icon, g.title, c);
+      });
+    };
+
+    const filterList = (list) => {
+      let out = list.filter(r => {
+        if (obstate.cat !== "all" && r.category !== obstate.cat) return false;
+        if (obstate.status && r.status !== obstate.status) return false;
+        if (obstate.q) {
+          const hay = (r.title + " " + r.description + " " + r.category + " " +
+            (r.tags || []).join(" ")).toLowerCase();
+          if (!hay.includes(obstate.q)) return false;
+        }
+        return true;
+      });
+      if (obstate.sort === "az") out.sort((a, b) => a.title.localeCompare(b.title));
+      else if (obstate.sort === "za") out.sort((a, b) => b.title.localeCompare(a.title));
+      else out.sort((a, b) => (a.lectureNumber || 0) - (b.lectureNumber || 0));
+      return out;
+    };
+
+    const paint = () => {
+      const filtered = filterList(all);
+      groupsHolder.innerHTML = "";
+
+      if (!filtered.length) {
+        groupsHolder.appendChild(emptyState("No lectures match your search",
+          "Try clearing the search box, choosing a different topic tab, or resetting the status filter."));
+        return;
+      }
+
+      // On "All", render grouped blocks in curated order. When a single
+      // category tab is selected, render just that group.
+      const renderGroupsOrder = obstate.cat === "all"
+        ? activeGroups
+        : activeGroups.filter(g => g.key === obstate.cat);
+
+      renderGroupsOrder.forEach(g => {
+        const items = filtered.filter(r => r.category === g.key);
+        if (!items.length) return;
+        const block = el("div", "bm2-group");
+        block.innerHTML = `
+          <div class="bm2-group-head">
+            <span class="bm2-group-icon">${g.icon || "📦"}</span>
+            <div class="bm2-group-titles">
+              <h3>${escapeHtml(g.title)}</h3>
+              <p>${escapeHtml(g.blurb || "")}</p>
+            </div>
+            <span class="bm2-group-count">${items.length}</span>
+          </div>
+          <div class="bm2-group-grid"></div>`;
+        const grid = block.querySelector(".bm2-group-grid");
+        items.forEach(r => grid.appendChild(biomatCard(r)));
+        groupsHolder.appendChild(block);
+      });
+    };
+
+    // Wire controls
+    wrap.querySelector("#ob-q").addEventListener("input", (e) => {
+      obstate.q = e.target.value.trim().toLowerCase(); paint();
+    });
+    wrap.querySelector("#ob-status").addEventListener("change", (e) => {
+      obstate.status = e.target.value; paint();
+    });
+    wrap.querySelector("#ob-sort").addEventListener("change", (e) => {
+      obstate.sort = e.target.value; paint();
     });
 
     // Smooth-scroll hero buttons (avoid changing the route hash).

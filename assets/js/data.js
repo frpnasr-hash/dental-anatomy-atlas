@@ -71,6 +71,7 @@ const SECTIONS = [
   { id: "prothesis",  label: "Stage 2 Prothesis",  icon: "🪥", tagline: "Practical Prothesis videos, Drive resources, playlists & student guidance — neatly grouped" },
   { id: "biomaterials2", label: "Biomaterials 2",  icon: "🧪", tagline: "Dental Biomaterials 2 · Semester 1 — theoretical lectures for second-year dentistry, organised & premium" },
   { id: "bm2practical", label: "Biomaterial 2 · Practical", icon: "🔬", tagline: "Dental Biomaterial 2 · Semester 1 — practical lectures & question bank for second-year dentistry, premium & exam-ready" },
+  { id: "oralbio",    label: "Oral Biology",       icon: "🔬", tagline: "Oral Biology · Semester 1 — tooth development, enamel, dentin, pulp & periodontium lectures for second-year dentistry, premium & exam-ready" },
   { id: "downloads",  label: "Downloads",         icon: "⬇️", tagline: "Instrument lists, templates & files" },
   { id: "favorites",  label: "Saved",             icon: "⭐", tagline: "Your bookmarked resources" },
   { id: "search",     label: "Search",            icon: "🔍", tagline: "Find anything across the hub" },
@@ -243,9 +244,322 @@ const BM2P_QUESTION_GROUPS = [
   { key: "Pending Review",            icon: "🕵️", title: "Pending Review",           blurb: "Files being verified and organised. They move into the correct group once reviewed." }
 ];
 
+/* ───────── ORAL BIOLOGY · SEMESTER 1 ─────────
+   A dedicated, premium academic section for the theoretical Oral Biology
+   lectures of second-year dentistry. It renders its own landing page with a
+   hero banner, semester badge, progress chips, category filter tabs, a search
+   bar and a grid of lecture cards grouped by category.
+
+   Everything is data-driven. To add a future Oral Biology lecture later, just
+   push a resource whose `section` is "oralbio" and whose `category` matches one
+   of the group keys below. New categories can also be added to ORALBIO_GROUPS
+   and they appear automatically. Unclear files can be filed under
+   "Pending Review" and they render a polished placeholder instead of breaking
+   the layout. Nothing else in the codebase needs to change. */
+const ORALBIO_META = {
+  courseCode: "Oral Biology",
+  courseName: "Oral Biology",
+  semester: "Semester 1",
+  year: "Second Year",
+  intro: "Oral Biology explores the microscopic structure, development and function of the tissues that build the tooth and its supporting apparatus. Across this semester you will study odontogenesis (tooth development), the four dental tissues — enamel, dentin, pulp and cementum — and the periodontium (periodontal ligament and alveolar bone). Every lecture file below is the official course material, organised into clean academic groups so you can revise fast and walk into the exam fully prepared."
+};
+
+/* Ordered category groups for the Oral Biology section. Every group is a
+   filter tab and a titled block on the landing page. Empty groups render a
+   polished placeholder instead of breaking the layout. */
+const ORALBIO_GROUPS = [
+  { key: "Tooth Development",     icon: "🌱", title: "Tooth Development",     blurb: "Odontogenesis — the stages of tooth development, the cap stage, root formation and Hertwig's epithelial root sheath." },
+  { key: "Enamel",               icon: "💠", title: "Enamel",               blurb: "The hardest tissue in the body — its composition, amelogenesis, ameloblast life cycle and histological structures." },
+  { key: "Dentin",               icon: "🦷", title: "Dentin",               blurb: "The main bulk of the tooth — physical and chemical characteristics and histological structure of dentin." },
+  { key: "Dental Pulp",          icon: "🫀", title: "Dental Pulp",          blurb: "The soft, richly vascularised and innervated connective tissue at the centre of the tooth." },
+  { key: "Periodontium",         icon: "🪢", title: "Periodontium",         blurb: "The tooth's supporting apparatus — the periodontal ligament, its cells, fibers and ground substance." },
+  { key: "Cementum",             icon: "🧷", title: "Cementum",             blurb: "The calcified tissue covering the anatomical root that anchors the periodontal ligament fibers." },
+  { key: "Alveolar Bone",        icon: "🦴", title: "Alveolar Bone",        blurb: "The specialised hard connective tissue that forms and lines the tooth socket." },
+  { key: "Pending Review",       icon: "🕵️", title: "Pending Review",       blurb: "Files being verified and organised. They move into the correct group once reviewed." }
+];
+
 /* ───────── RESOURCES ─────────
    The single source of truth. Extend freely. */
 const RESOURCES = [
+
+  /* ══════════ ORAL BIOLOGY · SEMESTER 1 (LIVE NOW) ══════════
+     16 official theoretical Oral Biology lecture PDFs for second-year
+     dentistry. Files live under assets/media/pdf/oralbio/ and open in the
+     in-app PDF viewer modal. Classified via lightweight filename/context
+     cues only — see ORALBIO_GROUPS for the group each `category` maps to. */
+  {
+    id: "ob-01-odontogenesis",
+    title: "Odontogenesis — Development & Growth of Teeth",
+    type: "pdf",
+    section: "oralbio",
+    category: "Tooth Development",
+    semester: "Semester 1",
+    description: "The foundation of tooth development — intra-uterine phases, the three germ layers and the crucial role of neural crest cells in forming dentin, pulp, cementum and the PDL.",
+    link: "assets/media/pdf/oralbio/01-odontogenesis-development-and-growth-of-teeth.pdf",
+    file: "assets/media/pdf/oralbio/01-odontogenesis-development-and-growth-of-teeth.pdf",
+    thumbnail: "",
+    tags: ["odontogenesis", "development", "germ layers", "neural crest", "embryology"],
+    status: "available",
+    featured: true,
+    level: "Level 2",
+    lectureNumber: 1
+  },
+  {
+    id: "ob-02-cap-stage",
+    title: "The Cap Stage of Tooth Development",
+    type: "pdf",
+    section: "oralbio",
+    category: "Tooth Development",
+    semester: "Semester 1",
+    description: "Histological features of the cap stage — the enamel organ (outer & inner dental epithelia, stellate reticulum, enamel knot & cord), the dental papilla and the dental sac.",
+    link: "assets/media/pdf/oralbio/02-cap-stage-of-tooth-development.pdf",
+    file: "assets/media/pdf/oralbio/02-cap-stage-of-tooth-development.pdf",
+    thumbnail: "",
+    tags: ["cap stage", "enamel organ", "dental papilla", "stellate reticulum", "development"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 2
+  },
+  {
+    id: "ob-03-root-formation",
+    title: "Root Formation & Hertwig's Epithelial Root Sheath",
+    type: "pdf",
+    section: "oralbio",
+    category: "Tooth Development",
+    semester: "Semester 1",
+    description: "How the root forms once the crown is complete — the epithelial diaphragm and Hertwig's epithelial root sheath (ERSH) that molds the shape of the root.",
+    link: "assets/media/pdf/oralbio/03-root-formation-and-hertwigs-sheath.pdf",
+    file: "assets/media/pdf/oralbio/03-root-formation-and-hertwigs-sheath.pdf",
+    thumbnail: "",
+    tags: ["root formation", "Hertwig", "epithelial diaphragm", "ERSH", "development"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 3
+  },
+  {
+    id: "ob-04-enamel-intro",
+    title: "Enamel — Introduction",
+    type: "pdf",
+    section: "oralbio",
+    category: "Enamel",
+    semester: "Semester 1",
+    description: "Introducing enamel — the hardest, most highly mineralised tissue in the body, its ectodermal origin, the DEJ and CEJ, and why it cannot be regenerated once lost.",
+    link: "assets/media/pdf/oralbio/04-enamel-introduction.pdf",
+    file: "assets/media/pdf/oralbio/04-enamel-introduction.pdf",
+    thumbnail: "",
+    tags: ["enamel", "introduction", "DEJ", "CEJ", "mineralised"],
+    status: "available",
+    featured: true,
+    level: "Level 2",
+    lectureNumber: 4
+  },
+  {
+    id: "ob-05-enamel-composition",
+    title: "Enamel — Chemical Composition & Proteins",
+    type: "pdf",
+    section: "oralbio",
+    category: "Enamel",
+    semester: "Semester 1",
+    description: "The composition of enamel — inorganic, organic and water content — and the unique non-collagenous matrix proteins: amelogenins and non-amelogenins (enamelin, ameloblastin).",
+    link: "assets/media/pdf/oralbio/05-enamel-chemical-composition-and-proteins.pdf",
+    file: "assets/media/pdf/oralbio/05-enamel-chemical-composition-and-proteins.pdf",
+    thumbnail: "",
+    tags: ["enamel", "composition", "amelogenins", "enamelin", "proteins"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 5
+  },
+  {
+    id: "ob-06-hunter-schreger",
+    title: "Enamel — Hunter-Schreger Bands",
+    type: "pdf",
+    section: "oralbio",
+    category: "Enamel",
+    semester: "Semester 1",
+    description: "The optical phenomenon of Hunter-Schreger bands — alternating dark and light zones seen in a ground section, arising from the changing direction of enamel rods.",
+    link: "assets/media/pdf/oralbio/06-enamel-hunter-schreger-bands.pdf",
+    file: "assets/media/pdf/oralbio/06-enamel-hunter-schreger-bands.pdf",
+    thumbnail: "",
+    tags: ["enamel", "Hunter-Schreger", "rods", "ground section", "optical"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 6
+  },
+  {
+    id: "ob-07-enamel-histology",
+    title: "Enamel — Histological Structures",
+    type: "pdf",
+    section: "oralbio",
+    category: "Enamel",
+    semester: "Semester 1",
+    description: "The histological landmarks of enamel — the dentinoenamel junction (DEJ), incremental lines, enamel lamellae, enamel tufts and enamel spindles.",
+    link: "assets/media/pdf/oralbio/07-enamel-histological-structures.pdf",
+    file: "assets/media/pdf/oralbio/07-enamel-histological-structures.pdf",
+    thumbnail: "",
+    tags: ["enamel", "histology", "DEJ", "incremental lines", "structures"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 7
+  },
+  {
+    id: "ob-08-enamel-tufts",
+    title: "Enamel — Tufts, Lamellae & Spindles",
+    type: "pdf",
+    section: "oralbio",
+    category: "Enamel",
+    semester: "Semester 1",
+    description: "A closer look at enamel tufts, lamellae and spindles, the neonatal line and the trapped odontoblastic processes — plus their clinical relevance to caries spread.",
+    link: "assets/media/pdf/oralbio/08-enamel-tufts-lamellae-and-spindles.pdf",
+    file: "assets/media/pdf/oralbio/08-enamel-tufts-lamellae-and-spindles.pdf",
+    thumbnail: "",
+    tags: ["enamel", "tufts", "lamellae", "spindles", "neonatal line"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 8
+  },
+  {
+    id: "ob-09-ameloblasts",
+    title: "Life History of Ameloblasts",
+    type: "pdf",
+    section: "oralbio",
+    category: "Enamel",
+    semester: "Semester 1",
+    description: "The seven stages of the ameloblast life cycle — morphogenetic, differentiating, secretory, transitional, maturative, protective and desmolytic — from the early bell stage.",
+    link: "assets/media/pdf/oralbio/09-life-history-of-ameloblasts.pdf",
+    file: "assets/media/pdf/oralbio/09-life-history-of-ameloblasts.pdf",
+    thumbnail: "",
+    tags: ["ameloblasts", "life history", "secretory", "maturative", "enamel"],
+    status: "available",
+    featured: true,
+    level: "Level 2",
+    lectureNumber: 9
+  },
+  {
+    id: "ob-10-amelogenesis",
+    title: "Amelogenesis — Matrix Formation & Mineralization",
+    type: "pdf",
+    section: "oralbio",
+    category: "Enamel",
+    semester: "Semester 1",
+    description: "How enamel is formed — organic matrix formation and mineralization, the rodless and rod (prismatic) enamel layers, Tomes' processes and the maturation stages.",
+    link: "assets/media/pdf/oralbio/10-amelogenesis-matrix-and-mineralization.pdf",
+    file: "assets/media/pdf/oralbio/10-amelogenesis-matrix-and-mineralization.pdf",
+    thumbnail: "",
+    tags: ["amelogenesis", "matrix", "mineralization", "Tomes process", "enamel"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 10
+  },
+  {
+    id: "ob-11-dentin",
+    title: "Dentin",
+    type: "pdf",
+    section: "oralbio",
+    category: "Dentin",
+    semester: "Semester 1",
+    description: "The main bulk of the tooth — physical and chemical characteristics of dentin, its collagen and hydroxyapatite content, and how it is studied in ground and decalcified sections.",
+    link: "assets/media/pdf/oralbio/11-dentin.pdf",
+    file: "assets/media/pdf/oralbio/11-dentin.pdf",
+    thumbnail: "",
+    tags: ["dentin", "collagen", "hydroxyapatite", "ground section", "histology"],
+    status: "available",
+    featured: true,
+    level: "Level 2",
+    lectureNumber: 11
+  },
+  {
+    id: "ob-12-dental-pulp",
+    title: "Dental Pulp",
+    type: "pdf",
+    section: "oralbio",
+    category: "Dental Pulp",
+    semester: "Semester 1",
+    description: "The soft, richly vascularised and innervated connective tissue at the centre of the tooth — the pulp chamber, root canals, pulp horns, apical foramen and accessory canals.",
+    link: "assets/media/pdf/oralbio/12-dental-pulp.pdf",
+    file: "assets/media/pdf/oralbio/12-dental-pulp.pdf",
+    thumbnail: "",
+    tags: ["pulp", "pulp chamber", "root canal", "apical foramen", "accessory canals"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 12
+  },
+  {
+    id: "ob-13-periodontium",
+    title: "Periodontium & Periodontal Ligament",
+    type: "pdf",
+    section: "oralbio",
+    category: "Periodontium",
+    semester: "Semester 1",
+    description: "The tooth's supporting apparatus — cementum, periodontal ligament, alveolar bone and gingiva — forming the specialised fibrous joint (gomphosis), plus the PDL's width and development.",
+    link: "assets/media/pdf/oralbio/13-periodontium-and-periodontal-ligament.pdf",
+    file: "assets/media/pdf/oralbio/13-periodontium-and-periodontal-ligament.pdf",
+    thumbnail: "",
+    tags: ["periodontium", "PDL", "gomphosis", "dental follicle", "supporting tissues"],
+    status: "available",
+    featured: true,
+    level: "Level 2",
+    lectureNumber: 13
+  },
+  {
+    id: "ob-14-pdl-structure",
+    title: "Periodontal Ligament — Histological Structure",
+    type: "pdf",
+    section: "oralbio",
+    category: "Periodontium",
+    semester: "Semester 1",
+    description: "The histological components of the periodontal ligament — its cells (fibroblasts, osteoblasts, cementoblasts, defensive & progenitor cells), fibers, ground substance and interstitial tissue.",
+    link: "assets/media/pdf/oralbio/14-periodontal-ligament-histological-structure.pdf",
+    file: "assets/media/pdf/oralbio/14-periodontal-ligament-histological-structure.pdf",
+    thumbnail: "",
+    tags: ["PDL", "fibroblasts", "cells", "fibers", "interstitial tissue"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 14
+  },
+  {
+    id: "ob-15-cementum",
+    title: "Cementum",
+    type: "pdf",
+    section: "oralbio",
+    category: "Cementum",
+    semester: "Semester 1",
+    description: "The specialised calcified tissue covering the anatomical root — its development from cementoblasts, physical characteristics, chemical composition and role in attaching Sharpey's fibers.",
+    link: "assets/media/pdf/oralbio/15-cementum.pdf",
+    file: "assets/media/pdf/oralbio/15-cementum.pdf",
+    thumbnail: "",
+    tags: ["cementum", "cementoblasts", "Sharpey's fibers", "acellular", "cellular"],
+    status: "available",
+    featured: true,
+    level: "Level 2",
+    lectureNumber: 15
+  },
+  {
+    id: "ob-16-alveolar-bone",
+    title: "Alveolar Bone",
+    type: "pdf",
+    section: "oralbio",
+    category: "Alveolar Bone",
+    semester: "Semester 1",
+    description: "The specialised hard connective tissue lining the tooth socket — its chemical composition, functions, and the hormonal, mechanical and cytokine factors that regulate bone physiology.",
+    link: "assets/media/pdf/oralbio/16-alveolar-bone.pdf",
+    file: "assets/media/pdf/oralbio/16-alveolar-bone.pdf",
+    thumbnail: "",
+    tags: ["bone", "alveolar", "osteoclast", "hydroxyapatite", "physiology"],
+    status: "available",
+    featured: false,
+    level: "Level 2",
+    lectureNumber: 16
+  },
+
 
   /* ══════════ DENTAL BIOMATERIAL 2 · SEMESTER 1 — PRACTICAL (LIVE NOW) ══════════
      8 practical lecture files + 3 question-bank files for second-year
@@ -1282,7 +1596,7 @@ const DAILY_TIPS = [
    to `featured:true` resources automatically, so this is fully optional. */
 const FEATURED_TODAY = {
   tips: true,          // include a rotating study tip in the spotlight
-  preferSections: ["biomaterials2", "bm2practical", "prothesis", "anatomy", "video", "pdf"]
+  preferSections: ["oralbio", "biomaterials2", "bm2practical", "prothesis", "anatomy", "video", "pdf"]
 };
 
 /* Quick Access Tiles — bold entry points on the homepage. Each tile maps
@@ -1290,6 +1604,7 @@ const FEATURED_TODAY = {
    built-in virtual view ("exam"). Order here defines display order. */
 const QUICK_TILES = [
   { section: "anatomy",       icon: "🦷", label: "Dental Anatomy",   accent: "blue"   },
+  { section: "oralbio",       icon: "🔬", label: "Oral Biology",     accent: "orange" },
   { section: "biomaterials2", icon: "🧪", label: "Biomaterials",     accent: "orange" },
   { section: "prothesis",     icon: "🪥", label: "Prothesis",        accent: "blue"   },
   { section: "pdf",           icon: "📚", label: "PDFs",             accent: "orange" },
@@ -1339,5 +1654,7 @@ window.BIOMATERIALS2_GROUPS = BIOMATERIALS2_GROUPS;
 window.BM2P_META = BM2P_META;
 window.BM2P_LECTURE_GROUPS = BM2P_LECTURE_GROUPS;
 window.BM2P_QUESTION_GROUPS = BM2P_QUESTION_GROUPS;
+window.ORALBIO_META = ORALBIO_META;
+window.ORALBIO_GROUPS = ORALBIO_GROUPS;
 window.RESOURCES = RESOURCES;
 window.DataAPI = DataAPI;

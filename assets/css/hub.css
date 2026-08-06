@@ -959,3 +959,24 @@ body.modal-open { overflow: hidden; }
 @media (max-width: 600px) {
   .bm2p-sub-head { flex-direction: column; align-items: flex-start; text-align: left; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   ORAL BIOLOGY · SEMESTER 1
+   Reuses the entire .bm2-* premium component set (hero, chips,
+   progress, tabs, groups, cards, contact). A few scoped accents
+   below give it its own biology-forward identity while staying on
+   the deep-blue / white / orange / black palette.
+   ═══════════════════════════════════════════════════════════════ */
+/* Biology-forward hero glow: a touch more orange + teal to feel
+   "living tissue" while remaining fully on-brand. */
+.oralbio .bm2-hero-glow {
+  background:
+    radial-gradient(circle at 15% 18%, rgba(255,107,26,0.20), transparent 44%),
+    radial-gradient(circle at 85% 82%, rgba(0,212,255,0.22), transparent 46%),
+    radial-gradient(circle at 55% 50%, rgba(0,212,255,0.06), transparent 60%);
+}
+/* Warm-tinted lecture-number accent so the section reads distinct
+   from the blue-forward Biomaterials 2 landing page. */
+.oralbio .bm2-group-icon {
+  background: linear-gradient(135deg, rgba(0,212,255,0.14), rgba(255,107,26,0.10));
+}
