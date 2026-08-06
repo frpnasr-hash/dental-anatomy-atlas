@@ -10,6 +10,19 @@
 
   const FAV_KEY = "dentoverse_favorites_v1";
 
+  /* ───────── Public-access guarantee ─────────
+     The retired student Sign-In / ID access-control system has been fully
+     removed. DentoVerse is a public website: every visitor lands directly
+     on the open homepage with all sections available — no sign-in, no
+     student ID, no stage gating. Purge any leftover auth session data so
+     browsers that used the old system start clean as public guests. */
+  try {
+    ["dentoverse_session_v1", "dentoverse_remember_v1"].forEach(k => {
+      localStorage.removeItem(k);
+      sessionStorage.removeItem(k);
+    });
+  } catch (e) { /* storage unavailable — nothing to clean */ }
+
   /* ───────── Favorites store ───────── */
   const Favorites = {
     _read() {
