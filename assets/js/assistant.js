@@ -32,8 +32,9 @@
 
   if (!window.RESOURCES || !window.SECTIONS) return;
 
-  const ASSISTANT = { name: "Nova", role: "DentoVerse AI", version: "2.0" };
+  const ASSISTANT = { name: "Nova", role: "DentoVerse Academic AI", version: "3.0-phase1" };
   const API_URL = "/api/nova";
+  const KNOWLEDGE_URL = "/assets/data/nova-knowledge.json";
 
   const LS_HISTORY = "dentoverse_assistant_history_v2";
   const LS_SEEN    = "dentoverse_assistant_seen_v1";
@@ -46,8 +47,8 @@
     en: {
       dir: "ltr",
       guideTag: "AI Companion",
-      status: "Online · multilingual · knows this hub",
-      placeholder: "Ask me anything — find, open, explain, translate…",
+      status: "Academic mode · PDFs + DentoVerse knowledge",
+      placeholder: "Ask about a PDF, topic, or site resource…",
       clear: "Clear chat",
       close: "Close",
       send: "Send",
@@ -58,6 +59,13 @@
       thinking: "Thinking…",
       searching: "Searching the web…",
       sources: "Sources",
+      sourceMatch: "Exact source",
+      page: "Page",
+      section: "Section",
+      knowledgeReady: "PDF knowledge ready",
+      knowledgeLoading: "Loading academic library…",
+      copyAnswer: "Copy answer",
+      answerCopied: "Answer copied",
       copyLink: "Copy link",
       saved: "Saved to favourites",
       unsaved: "Removed from favourites",
@@ -78,8 +86,8 @@
     ar: {
       dir: "rtl",
       guideTag: "مساعد ذكي",
-      status: "متصل · متعدد اللغات · يعرف كل المنصة",
-      placeholder: "اسألني أي حاجة — دور، افتح، اشرح، ترجم…",
+      status: "وضع أكاديمي · ملفات PDF ومعرفة DentoVerse",
+      placeholder: "اسأل عن ملف PDF أو موضوع أو مصدر في المنصة…",
       clear: "مسح المحادثة",
       close: "إغلاق",
       send: "إرسال",
@@ -90,6 +98,13 @@
       thinking: "بفكر…",
       searching: "ببحث على الإنترنت…",
       sources: "المصادر",
+      sourceMatch: "المصدر المباشر",
+      page: "صفحة",
+      section: "القسم",
+      knowledgeReady: "معرفة ملفات PDF جاهزة",
+      knowledgeLoading: "بجهّز المكتبة الأكاديمية…",
+      copyAnswer: "نسخ الإجابة",
+      answerCopied: "تم نسخ الإجابة",
       copyLink: "نسخ الرابط",
       saved: "تمت الإضافة للمفضلة",
       unsaved: "تمت الإزالة من المفضلة",
@@ -124,6 +139,9 @@
     .toLowerCase().replace(/[’']/g, "").replace(/[^a-z0-9\u0600-\u06FF\s]/g, " ")
     .replace(/\s+/g, " ").trim();
   const words = (s) => norm(s).split(" ").filter(w => w.length > 1);
+  const normArabic = (s) => norm(s)
+    .replace(/[إأآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ؤ/g, "و").replace(/ئ/g, "ي")
+    .replace(/ة/g, "ه").replace(/[ًٌٍَُِّْـ]/g, "");
 
   const TYPE_ICON = { pdf: "📄", video: "🎬", telegram: "✈️", link: "🔗", note: "📝", flashcard: "🃏", quiz: "🧠", download: "⬇️", playlist: "▶️", drive: "📂" };
   const TYPE_LABEL = { pdf: "PDF", video: "Video", telegram: "Telegram", link: "Link", note: "Note", flashcard: "Flashcards", quiz: "Quiz", download: "Download", playlist: "Playlist", drive: "Drive" };
@@ -182,10 +200,15 @@
 
   async function askAI(userText, opts) {
     opts = opts || {};
+    const knowledgeMatches = opts.knowledge || searchKnowledge(userText, 6);
     const context = {
       site: { name: (window.SITE && SITE.name) || "DentoVerse", tagline: (window.SITE && SITE.tagline) || "", author: (window.SITE && SITE.author) || "Abdel Rahman Teba" },
       sections: SECTIONS.filter(s => !["search"].includes(s.id)).map(s => ({ id: s.id, label: s.label, tagline: s.tagline })),
-      topResources: relevantResourcesForContext(userText)
+      topResources: relevantResourcesForContext(userText),
+      knowledge: knowledgeMatches.map(match => ({
+        resourceId: match.resourceId, title: match.title, file: match.file, section: match.sectionLabel,
+        category: match.category, heading: match.heading, page: match.page, text: String(match.text || "").slice(0, 2200)
+      }))
     };
     const messages = Memory.turns.slice(-20).concat([{ role: "user", content: userText }]);
     const payload = { messages, context, mode: opts.mode && opts.mode !== "auto" ? opts.mode : "", web: !!opts.web };
@@ -200,7 +223,7 @@
       });
       clearTimeout(timer);
       const d = await r.json();
-      if (d && d.ok && d.reply) return { ok: true, reply: d.reply, sources: d.sources || [], web: !!d.web };
+      if (d && d.ok && d.reply) return { ok: true, reply: d.reply, sources: d.sources || [], knowledgeSources: d.knowledgeSources || [], web: !!d.web };
       return { ok: false, fallback: true };
     } catch (e) {
       clearTimeout(timer);
@@ -219,7 +242,105 @@
     extra.forEach(r => { if (!seen.has(r.id)) { seen.add(r.id); base.push(r); } });
     return base.slice(0, 24).map(slimResource);
   }
-  const slimResource = (r) => ({ title: r.title, type: r.type, section: r.section, category: r.category || "", status: r.status });
+  const slimResource = (r) => ({ id: r.id, title: r.title, type: r.type, section: r.section, category: r.category || "", description: r.description || "", file: r.file || r.link || "", status: r.status });
+
+  /* ═══════════ PDF + SITE KNOWLEDGE BASE ═══════════ */
+  const Knowledge = { ready: false, loading: false, data: { documents: [], chunks: [], stats: {} }, index: [], lastQuery: "", lastMatches: [] };
+  const ARABIC_TERMS = {
+    "اسنان": "dental teeth", "سن": "tooth dental", "ضرس": "molar tooth", "مينا": "enamel", "عاج": "dentin",
+    "لب": "pulp", "لثه": "gingiva periodontal", "اربطة": "ligament fibers", "رباط": "ligament",
+    "تكوين": "formation development", "تطور": "development", "جذر": "root", "جذور": "roots", "تاج": "crown",
+    "مواد": "materials", "خامات": "biomaterials materials", "طبعه": "impression", "طبعات": "impression",
+    "جبس": "gypsum", "شمع": "wax", "سيراميك": "ceramics", "اسمنت": "cement", "حشو": "restorative composite",
+    "كمبوزيت": "composite", "راتنج": "resin", "بوليمر": "polymer", "سباكه": "casting", "سبايك": "alloys",
+    "تركيب": "composition structure", "خصائص": "properties", "انواع": "classification types", "فرق": "difference compare",
+    "وظيفه": "function", "شرح": "explain", "لخص": "summary", "ملخص": "summary", "عملي": "practical",
+    "محاضره": "lecture", "ملف": "pdf document", "ملفات": "pdf documents", "صفحه": "page", "اسئله": "questions mcq exam", "امتحان": "exam questions"
+  };
+
+  function expandedKnowledgeTerms(query) {
+    const base = words(normArabic(query)).filter(w => !STOP.has(w));
+    const expanded = base.slice();
+    base.forEach(w => {
+      const candidates = [w];
+      if (w.startsWith("وال") && w.length > 4) candidates.push(w.slice(3));
+      if (w.startsWith("ال") && w.length > 3) candidates.push(w.slice(2));
+      if (w.endsWith("ات") && w.length > 4) candidates.push(w.slice(0, -2), w.slice(0, -2) + "ه");
+      const mapped = candidates.map(candidate => ARABIC_TERMS[candidate]).find(Boolean);
+      if (mapped) expanded.push(...words(mapped));
+      (TOKEN_CONCEPT[w] || new Set()).forEach(c => expanded.push(...words((SYNONYMS[c] || []).join(" "))));
+    });
+    return Array.from(new Set(expanded.filter(w => w.length > 1)));
+  }
+
+  async function loadKnowledge() {
+    if (Knowledge.loading || Knowledge.ready) return;
+    Knowledge.loading = true;
+    try {
+      const response = await fetch(KNOWLEDGE_URL, { cache: "force-cache" });
+      if (!response.ok) throw new Error("knowledge index unavailable");
+      Knowledge.data = await response.json();
+      Knowledge.index = (Knowledge.data.chunks || []).map(chunk => {
+        const meta = `${chunk.title} ${chunk.sectionLabel} ${chunk.category} ${chunk.heading}`;
+        const normalized = normArabic(`${meta} ${chunk.text}`);
+        return { chunk, normalized, tokens: new Set(words(normalized)), meta: normArabic(meta) };
+      });
+      Knowledge.ready = true;
+    } catch (e) {
+      Knowledge.ready = false;
+    } finally {
+      Knowledge.loading = false;
+      updateKnowledgeStatus();
+    }
+  }
+
+  function resolveKnowledgeQuery(query) {
+    const shortFollowup = /^(explain|summarize|continue|more|why|how|what about|and |اشرح|لخص|كمل|ليه|ازاي|طب |وماذا|وما |ايه كمان)/i.test(String(query).trim());
+    return shortFollowup && Knowledge.lastQuery ? `${Knowledge.lastQuery} ${query}` : query;
+  }
+
+  function searchKnowledge(query, limit) {
+    if (!Knowledge.ready || !Knowledge.index.length) return [];
+    const resolved = resolveKnowledgeQuery(query);
+    const terms = expandedKnowledgeTerms(resolved);
+    if (!terms.length) return [];
+    const phrase = normArabic(resolved);
+    const scored = Knowledge.index.map(entry => {
+      let score = 0, hits = 0;
+      terms.forEach(term => {
+        if (entry.meta.includes(term)) { score += 8; hits += 1; }
+        else if (entry.tokens.has(term)) { score += 3.5; hits += 1; }
+        else if (term.length > 4 && entry.normalized.includes(term)) { score += 2; hits += 1; }
+      });
+      if (phrase.length > 8 && entry.normalized.includes(phrase)) score += 18;
+      if (hits > 1) score += hits * 1.5;
+      return { ...entry.chunk, score, hits };
+    }).filter(item => item.score >= 3.5).sort((a, b) => b.score - a.score || a.page - b.page);
+    const selected = [];
+    const perDocument = {};
+    for (const item of scored) {
+      if ((perDocument[item.resourceId] || 0) >= 2) continue;
+      selected.push(item);
+      perDocument[item.resourceId] = (perDocument[item.resourceId] || 0) + 1;
+      if (selected.length >= (limit || 6)) break;
+    }
+    if (selected.length) {
+      Knowledge.lastQuery = resolved;
+      Knowledge.lastMatches = selected;
+    }
+    return selected;
+  }
+
+  function updateKnowledgeStatus() {
+    if (!panel) return;
+    const status = panel.querySelector("[data-nova-status]");
+    if (!status) return;
+    if (Knowledge.ready) {
+      const count = Knowledge.data.stats && Knowledge.data.stats.documents || 0;
+      status.textContent = UILANG === "ar" ? `${count} ملف PDF جاهز للبحث` : `${count} PDFs indexed · bilingual answers`;
+    } else if (Knowledge.loading) status.textContent = t("knowledgeLoading");
+    else status.textContent = t("status");
+  }
 
   /* ═══════════ synonyms / concepts (local engine) ═══════════ */
   const SYNONYMS = {
@@ -446,10 +567,33 @@
   }
 
   /* ═══════════════════════════════════════════════════════════════
-     RESPONSE (LOCAL / OFFLINE BRAIN) — returns {text, chips, cards, action}
+     RESPONSE (LOCAL / OFFLINE BRAIN) — returns {text, chips, cards, sources, action}
      Multilingual-aware surface strings; falls back for general Qs.
      ═══════════════════════════════════════════════════════════════ */
   const L = (en, ar) => (UILANG === "ar" ? ar : en);
+
+  function bestKnowledgeExcerpt(match, query) {
+    const terms = expandedKnowledgeTerms(query);
+    const parts = String(match.text || "").split(/(?<=[.!?])\s+|\n+/).map(s => s.trim()).filter(s => s.length >= 28);
+    let best = parts[0] || String(match.text || "").trim();
+    let bestScore = -1;
+    parts.forEach(part => {
+      const normalized = normArabic(part);
+      const score = terms.reduce((sum, term) => sum + (normalized.includes(term) ? 1 : 0), 0);
+      if (score > bestScore) { best = part; bestScore = score; }
+    });
+    return trim(best, 420);
+  }
+
+  function knowledgeResponse(query, matches) {
+    const top = matches[0];
+    const excerpt = esc(bestKnowledgeExcerpt(top, query));
+    const location = `${esc(top.title)} · ${esc(t("page"))} ${top.page}`;
+    const text = UILANG === "ar"
+      ? `وجدت الإجابة الأقرب داخل <strong>${location}</strong>. النص الأكاديمي المرتبط مباشرةً بسؤالك هو:<br><br>“${excerpt}”<br><br>راجِع المصادر بالأسفل لفتح الصفحة نفسها أو الوصول للقسم. إذا أردت، اسألني سؤالاً تابعاً وسأكمل من نفس السياق.`
+      : `I found the strongest answer in <strong>${location}</strong>. The most directly relevant academic passage is:<br><br>“${excerpt}”<br><br>Use the sources below to open the exact page or go to its section. You can ask a follow-up and I’ll keep this context.`;
+    return { text, sources: matches.slice(0, 4), chips: followupChips(query) };
+  }
 
   function respondLocal(rawQuery) {
     const q = rawQuery.trim();
@@ -496,6 +640,13 @@
       const sec = detectSection(concepts, qWords);
       if (sec) return { text: L(`Taking you to <strong>${sectionIcon(sec)} ${esc(sectionLabel(sec))}</strong>…`, `بوديك لـ <strong>${sectionIcon(sec)} ${esc(sectionLabel(sec))}</strong>…`), action: { kind: "nav", section: sec } };
       return noMatch(q);
+    }
+
+    // Grounded PDF answer: search extracted page-level content before falling back to metadata-only cards.
+    const knowledgeMatches = searchKnowledge(q, 6);
+    const knowledgeIntent = RX.general.test(q) || /pdf|document|lecture|page|according|داخل|في الملف|المحاضره|المحاضرة|صفحه|صفحة|اشرح|لخص|عرف|ما هو|ما هي/i.test(q);
+    if (knowledgeMatches.length && (knowledgeIntent || knowledgeMatches[0].score >= 15)) {
+      return knowledgeResponse(q, knowledgeMatches);
     }
 
     // Default local: smart search across everything.
@@ -604,7 +755,7 @@
           <span data-nova-modelabel></span>
           <select id="nova-mode" class="nova-mode"></select>
         </label>
-        <button type="button" class="nova-web-toggle" id="nova-web" aria-pressed="false">
+        <button type="button" class="nova-web-toggle" id="nova-web" aria-pressed="false" hidden>
           <span class="nova-web-dot"></span><span data-nova-weblabel></span>
         </button>
       </div>
@@ -634,8 +785,10 @@
     modeSelect.value = Prefs.data.mode || "auto";
     modeSelect.addEventListener("change", () => { Prefs.data.mode = modeSelect.value; Prefs.save(); });
 
+    Prefs.data.web = false;
+    Prefs.save();
     webToggle.addEventListener("click", () => {
-      Prefs.data.web = !Prefs.data.web; Prefs.save();
+      Prefs.data.web = false; Prefs.save();
       webToggle.setAttribute("aria-pressed", String(Prefs.data.web));
       webToggle.classList.toggle("on", Prefs.data.web);
     });
@@ -680,6 +833,7 @@
     panel.querySelector('[data-nova="close"]').title = t("close");
     // mode option labels
     Array.from(modeSelect.options).forEach(o => { o.textContent = I18N[UILANG].modes[o.dataset.mode] || o.dataset.mode; });
+    updateKnowledgeStatus();
   }
   function setUILang(lang, persist) {
     if (lang !== "ar" && lang !== "en") return;
@@ -758,6 +912,7 @@
     const typing = typingIndicator(useWeb ? t("searching") : t("thinking"));
 
     const { qWords, concepts } = analyze(text);
+    const knowledgeMatches = searchKnowledge(text, 6);
     const hubTargeted = isHubTargeted(text, concepts, qWords);
 
     // Route: hub-targeted commands → local engine (instant, deterministic).
@@ -777,7 +932,7 @@
 
     // AI path
     let ai;
-    try { ai = await askAI(text, { mode: Prefs.data.mode, web: Prefs.data.web }); }
+    try { ai = await askAI(text, { mode: Prefs.data.mode, web: false, knowledge: knowledgeMatches }); }
     catch (e) { ai = { ok: false, fallback: true }; }
 
     typing.remove();
@@ -790,6 +945,10 @@
       textNode.innerHTML = mdToHtml(ai.reply);
       node.appendChild(textNode);
 
+      // Ground every PDF-aware answer with exact local file/page references.
+      const groundedSources = knowledgeMatches.length ? knowledgeMatches : (ai.knowledgeSources || []);
+      if (groundedSources.length) node.appendChild(knowledgeSourcesBlock(groundedSources.slice(0, 4)));
+
       // If the AI answer references the hub, attach relevant local cards.
       const localCards = maybeAttachCards(text, ai.reply);
       if (localCards.length) {
@@ -797,7 +956,7 @@
         localCards.forEach(r => list.appendChild(resultCard(r)));
         node.appendChild(list);
       }
-      // Web source cards
+      // External source cards remain supported by the backend but Phase 1 keeps web search off.
       if (ai.sources && ai.sources.length) node.appendChild(sourcesBlock(ai.sources));
 
       const row = pushMessage("bot", node, { rtl: replyDet.rtl });
@@ -824,6 +983,42 @@
     const sec = detectSection(concepts, qWords);
     if ((strong && (mentionsHub || sec)) ) return results.map(x => x.r).slice(0, 3);
     return [];
+  }
+
+  function knowledgeSourcesBlock(matches) {
+    const wrap = el("div", "nova-knowledge-sources");
+    wrap.appendChild(el("div", "nova-sources-title", `⌁ ${esc(t("sourceMatch"))}`));
+    matches.forEach(match => wrap.appendChild(knowledgeSourceCard(match)));
+    return wrap;
+  }
+
+  function knowledgeSourceCard(match) {
+    const resource = RESOURCES.find(r => r.id === match.resourceId) || RESOURCES.find(r => (r.file || r.link) === match.file);
+    const card = el("article", "nova-k-source");
+    const sourceUrl = `${match.file}#page=${match.page}`;
+    card.innerHTML = `
+      <div class="nova-k-source-main">
+        <span class="nova-k-file">PDF</span>
+        <div><strong>${esc(match.title)}</strong><p>${esc(match.sectionLabel)} · ${esc(match.category || match.heading)} · ${esc(t("page"))} ${match.page}</p></div>
+      </div>
+      <div class="nova-k-actions">
+        <button type="button" class="nc-btn primary" data-k="open">▸ ${esc(t("open"))}</button>
+        ${resource ? `<button type="button" class="nc-btn" data-k="go">📍 ${esc(t("goto"))}</button><button type="button" class="nc-btn ${Fav.has(resource.id) ? "on" : ""}" data-k="save">${Fav.has(resource.id) ? "★ " + esc(t("savedBtn")) : "☆ " + esc(t("save"))}</button>` : ""}
+        <button type="button" class="nc-btn" data-k="copy">⧉</button>
+      </div>`;
+    card.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-k]");
+      if (!button) return;
+      if (button.dataset.k === "open") window.open(sourceUrl, "_blank", "noopener");
+      else if (button.dataset.k === "go" && resource) goToResource(resource);
+      else if (button.dataset.k === "save" && resource) {
+        const now = Fav.toggle(resource.id);
+        button.classList.toggle("on", now);
+        button.textContent = now ? "★ " + t("savedBtn") : "☆ " + t("save");
+        toast(now ? t("saved") : t("unsaved"), now ? "★" : "☆");
+      } else if (button.dataset.k === "copy") fallbackCopy(`${match.title} — ${t("page")} ${match.page}\n${location.origin}/${sourceUrl}`, () => toast(t("linkCopied"), "⧉"));
+    });
+    return card;
   }
 
   function sourcesBlock(sources) {
@@ -867,6 +1062,7 @@
       tn.innerHTML = reply.text;
       wrap.appendChild(tn);
     }
+    if (reply.sources && reply.sources.length) wrap.appendChild(knowledgeSourcesBlock(reply.sources));
     if (reply.cards && reply.cards.length) {
       const list = el("div", "nova-cards");
       reply.cards.forEach(r => list.appendChild(resultCard(r)));
@@ -1003,7 +1199,9 @@
     // initial UI language from saved pref (auto → keep en until first message)
     if (Prefs.data.lang === "ar" || Prefs.data.lang === "en") UILANG = Prefs.data.lang;
     buildUI();
-    probeAI().then(() => { if (panel) { const st = panel.querySelector("[data-nova-status]"); if (st && AI.available) st.textContent = t("status"); } });
+    updateKnowledgeStatus();
+    loadKnowledge();
+    probeAI();
     if (!localStorage.getItem(LS_SEEN)) {
       setTimeout(() => fab && fab.classList.add("nudge"), 1400);
       setTimeout(() => fab && fab.classList.remove("nudge"), 6000);
@@ -1019,6 +1217,8 @@
     ask: (q) => { openPanel(); setTimeout(() => handleUserMessage(q), 200); },
     setLang: (l) => setUILang(l, true),
     search,
+    searchKnowledge,
+    knowledgeStatus: () => ({ ready: Knowledge.ready, stats: Knowledge.data.stats || {} }),
     aiStatus: () => ({ ...AI })
   };
 })();

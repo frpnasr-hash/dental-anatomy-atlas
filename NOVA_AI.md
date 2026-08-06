@@ -1,49 +1,64 @@
-# 🤖 Nova AI — DentoVerse Assistant (v2)
+# Nova AI — Phase 1 PDF + Site Knowledge Assistant
 
-Nova is the premium, **multilingual, general-purpose** AI companion built into DentoVerse.
-It understands **English, Modern Standard Arabic (الفصحى), and Egyptian colloquial Arabic (العامية المصرية)**,
-answers general **and** dentistry questions, explains concepts, finds & opens hub resources,
-and can search the web when configured.
+Nova is DentoVerse's bilingual academic assistant. Phase 1 is intentionally focused on reliable answers from the site's own PDFs and resource catalogue, with a fast local fallback and optional LLM-powered synthesis.
 
-## ✨ What Nova can do
-- **Multilingual** — auto-detects the user's language (EN / MSA / Egyptian) and replies in the same language, RTL-aware. Handles mixed AR/EN.
-- **General knowledge Q&A** — science, study help, tech, everyday explanations, comparisons, summaries, translation.
-- **Dentistry expert** — anatomy, biomaterials, prosthodontics, operative, etc.
-- **Hub intelligence** — finds PDFs, videos, question banks & sections; opens them; highlights cards; recommends what to study next.
-- **Web search** — optional live grounding with cited source cards.
-- **Memory & feedback** — remembers the session, learns from 👍/👎 to sharpen retrieval, saves preferences (language, answer style, web toggle).
-- **Answer modes** — Auto / Short / Detailed / Steps / Simple / Compare / Summarize / Dentistry.
+## Phase 1 capabilities
 
-## 🧠 Architecture
-- **Frontend:** `assets/js/assistant.js` + `assets/css/assistant.css` — the UI, local smart-search engine, language detection, memory, and AI routing. **100% additive** and non-destructive to the rest of the site.
-- **Backend:** `api/nova.js` — a Vercel serverless function that proxies to an LLM (and optional web search). It never exposes keys to the browser.
-- **Graceful degradation:** if no LLM key is set (or the API is unreachable), Nova automatically falls back to its built-in offline smart search — **the site never breaks.**
+- Searches **45 local PDFs across 1,466 pages** using a generated page-level knowledge index.
+- Answers from retrieved PDF passages and shows the exact **file, section, category, and page**.
+- Searches all existing DentoVerse resources and explains where each resource is located.
+- Supports English, Modern Standard Arabic, Egyptian Arabic, and mixed Arabic/English queries.
+- Keeps conversation context for follow-up questions.
+- Provides Open, Go to, Copy, and Save actions on grounded source cards.
+- Works without an external AI provider: local retrieval returns the closest useful source passage.
+- Uses an optional server-side LLM only to synthesize a more natural answer from retrieved local passages. Keys are never exposed to the browser.
 
-## 🔑 Enable the AI brain (Vercel → Settings → Environment Variables)
-All variables are **optional**. Add an LLM key to unlock true general-purpose answers.
-Set **one** LLM provider (auto-detected in this order):
+## Architecture
 
-| Provider | Variable(s) | Optional model var |
-|---|---|---|
-| OpenAI | `OPENAI_API_KEY` | `OPENAI_MODEL` (default `gpt-4o-mini`) |
-| OpenRouter | `OPENROUTER_API_KEY` | `OPENROUTER_MODEL` |
-| Groq | `GROQ_API_KEY` | `GROQ_MODEL` (default `llama-3.3-70b-versatile`) |
-| DeepSeek | `DEEPSEEK_API_KEY` | `DEEPSEEK_MODEL` (default `deepseek-chat`) |
-| Google Gemini | `GEMINI_API_KEY` | `GEMINI_MODEL` (default `gemini-1.5-flash`) |
-| Any OpenAI-compatible | `NOVA_LLM_BASE_URL` + `NOVA_LLM_API_KEY` | `NOVA_LLM_MODEL` |
+- `assets/data/nova-knowledge.json` — generated searchable PDF metadata and page chunks.
+- `scripts/build-nova-index.js` — extracts text with `pdftotext`, keeps page numbers, and rebuilds the index.
+- `assets/js/assistant.js` — bilingual retrieval, follow-up context, resource search, and premium assistant UI.
+- `assets/css/assistant.css` — floating button, expandable chat panel, source cards, actions, RTL, loading states, and responsive layout.
+- `api/nova.js` — Vercel function that performs server-side retrieval and optionally asks a configured LLM to answer only from grounded passages.
 
-### Optional web search (set one)
-`TAVILY_API_KEY` · `SERPER_API_KEY` · `BRAVE_API_KEY` · `GOOGLE_CSE_KEY` + `GOOGLE_CSE_CX`
+## Rebuild the PDF index
 
-After adding variables, redeploy (Vercel does this automatically on the next push).
-See `.env.example` for a copy-paste template. **Redeploy** and Nova's brain is live — no code change needed.
+After adding or replacing PDFs and updating `assets/js/data.js`, run:
 
-## 🧪 Verify it's live
-Open `/api/nova` in the browser (GET) — it returns a JSON health probe:
-```json
-{ "ok": true, "ai": true, "provider": "openai", "webSearch": false, "name": "Nova", "version": "2.0" }
+```bash
+node scripts/build-nova-index.js
 ```
-`ai: false` means no LLM key is configured yet (Nova still works offline).
 
----
-Designed & Produced by **Abdel Rahman Teba** © ®
+The script reads the current resource catalogue, extracts local PDF text page by page, and rewrites `assets/data/nova-knowledge.json`. Commit the regenerated index with the PDF/resource change.
+
+## Optional AI synthesis
+
+Nova's local retrieval works without environment variables. For more natural explanations and Arabic translation of English PDF passages, configure one provider in Vercel:
+
+| Provider | Environment variable | Optional model variable |
+|---|---|---|
+| OpenAI | `OPENAI_API_KEY` | `OPENAI_MODEL` |
+| OpenRouter | `OPENROUTER_API_KEY` | `OPENROUTER_MODEL` |
+| Groq | `GROQ_API_KEY` | `GROQ_MODEL` |
+| DeepSeek | `DEEPSEEK_API_KEY` | `DEEPSEEK_MODEL` |
+| Gemini | `GEMINI_API_KEY` | `GEMINI_MODEL` |
+| OpenAI-compatible | `NOVA_LLM_BASE_URL` + `NOVA_LLM_API_KEY` | `NOVA_LLM_MODEL` |
+
+The model receives only the most relevant local PDF chunks, resource metadata, and recent conversation turns. It is instructed to cite exact titles and pages and never invent sources.
+
+## Health check
+
+`GET /api/nova` returns the active provider and index statistics:
+
+```json
+{
+  "ok": true,
+  "ai": true,
+  "provider": "openai",
+  "name": "Nova",
+  "version": "3.0-phase1",
+  "knowledge": { "documents": 45, "chunks": 1261, "pages": 1466 }
+}
+```
+
+Phase 1 deliberately excludes voice, image understanding, advanced long-term memory, and full web search.

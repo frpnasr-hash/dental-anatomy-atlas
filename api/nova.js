@@ -38,6 +38,18 @@
 
 const MAX_MESSAGES = 24;          // trim conversation to keep tokens sane
 const REQUEST_TIMEOUT_MS = 45000; // hard ceiling for upstream calls
+let KNOWLEDGE = { chunks: [], stats: {} };
+try { KNOWLEDGE = require("../assets/data/nova-knowledge.json"); } catch { /* local fallback still works */ }
+
+const ARABIC_QUERY_TERMS = {
+  "اسنان": "dental teeth", "سن": "tooth dental", "ضرس": "molar tooth", "مينا": "enamel", "عاج": "dentin",
+  "لب": "pulp", "لثه": "gingiva periodontal", "رباط": "ligament", "تكوين": "formation development", "تطور": "development",
+  "جذر": "root", "تاج": "crown", "مواد": "materials", "خامات": "biomaterials materials", "طبعه": "impression",
+  "جبس": "gypsum", "شمع": "wax", "سيراميك": "ceramics", "اسمنت": "cement", "حشو": "restorative composite",
+  "كمبوزيت": "composite", "راتنج": "resin", "سباكه": "casting", "سبايك": "alloys", "تركيب": "composition structure",
+  "خصائص": "properties", "انواع": "classification types", "فرق": "difference compare", "وظيفه": "function", "عملي": "practical",
+  "محاضره": "lecture", "ملف": "pdf document", "ملفات": "pdf documents", "صفحه": "page", "اسئله": "questions mcq exam", "امتحان": "exam questions"
+};
 
 /* ───────── small helpers ───────── */
 function json(res, status, body) {
@@ -66,11 +78,47 @@ async function readBody(req) {
   });
 }
 
+function normalizeSearch(value) {
+  return String(value || "").toLowerCase()
+    .replace(/[إأآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ؤ/g, "و").replace(/ئ/g, "ي").replace(/ة/g, "ه")
+    .replace(/[ًٌٍَُِّْـ]/g, "").replace(/[^a-z0-9\u0600-\u06ff\s]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function searchKnowledge(query, limit = 6) {
+  const stop = new Set("a an the of for to in on at is are be can could would please show me find open i want need where what which how do you about this that with and or في من الى علي عن مع هو هي ايه ما ماذا كيف هل يا".split(" "));
+  const base = normalizeSearch(query).split(" ").filter((word) => word.length > 1 && !stop.has(word));
+  const terms = [...base];
+  base.forEach((word) => {
+    const candidates = [word];
+    if (word.startsWith("وال") && word.length > 4) candidates.push(word.slice(3));
+    if (word.startsWith("ال") && word.length > 3) candidates.push(word.slice(2));
+    if (word.endsWith("ات") && word.length > 4) candidates.push(word.slice(0, -2), word.slice(0, -2) + "ه");
+    const mapped = candidates.map((candidate) => ARABIC_QUERY_TERMS[candidate]).find(Boolean);
+    if (mapped) terms.push(...mapped.split(" "));
+  });
+  const unique = [...new Set(terms)];
+  if (!unique.length) return [];
+  return (KNOWLEDGE.chunks || []).map((chunk) => {
+    const meta = normalizeSearch(`${chunk.title} ${chunk.sectionLabel} ${chunk.category} ${chunk.heading}`);
+    const text = normalizeSearch(chunk.text);
+    let score = 0;
+    unique.forEach((term) => {
+      if (meta.includes(term)) score += 8;
+      else if (new RegExp(`(^|\\s)${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?=\\s|$)`).test(text)) score += 3.5;
+      else if (term.length > 4 && text.includes(term)) score += 2;
+    });
+    return { ...chunk, score };
+  }).filter((chunk) => chunk.score >= 3.5).sort((a, b) => b.score - a.score).slice(0, limit);
+}
+
 function withTimeout(promise, ms) {
-  return Promise.race([
-    promise,
-    new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms)),
-  ]);
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("timeout")), ms);
+    Promise.resolve(promise).then(
+      (value) => { clearTimeout(timer); resolve(value); },
+      (error) => { clearTimeout(timer); reject(error); }
+    );
+  });
 }
 
 async function fetchJSON(url, opts, ms) {
@@ -162,11 +210,15 @@ function buildSystemPrompt(ctx) {
   const site = ctx && ctx.site ? ctx.site : {};
   const sections = (ctx && ctx.sections) || [];
   const resources = (ctx && ctx.topResources) || [];
+  const knowledge = (ctx && ctx.knowledge) || [];
   const sectionList = sections.map((s) => `- ${s.label} (id: ${s.id})${s.tagline ? " — " + s.tagline : ""}`).join("\n");
   const resourceList = resources
     .slice(0, 40)
     .map((r) => `- [${r.type}] "${r.title}" · section:${r.section}${r.category ? " · " + r.category : ""}${r.status && r.status !== "available" ? " · (" + r.status + ")" : ""}`)
     .join("\n");
+  const knowledgeList = knowledge.slice(0, 8).map((item, index) =>
+    `[PDF ${index + 1}] ${item.title}\nSection: ${item.section || ""} · Category: ${item.category || ""} · Page: ${item.page}\nFile: ${item.file}\nHeading: ${item.heading || ""}\nExtracted text:\n${String(item.text || "").slice(0, 2400)}`
+  ).join("\n\n");
 
   return `You are **Nova**, the premium AI academic assistant embedded in **${site.name || "DentoVerse"}** — a futuristic dental-student study hub created by ${site.author || "Abdel Rahman Teba"}.
 
@@ -183,13 +235,21 @@ function buildSystemPrompt(ctx) {
 - Understand Egyptian slang and casual phrasing. Never sound robotic or overly formal when the user is casual.
 - For Arabic replies, write right-to-left friendly text and use correct Arabic punctuation.
 
-## CAPABILITIES
-You are a TRUE general-purpose assistant, not just a file finder. You can:
-1. Answer ANY general-knowledge question (science, history, tech, everyday life...).
-2. Answer dentistry & medical-education questions accurately (anatomy, biomaterials, prosthodontics, operative, etc.).
-3. Explain concepts simply, compare/contrast, summarize, and give step-by-step study help.
-4. Help the user find and navigate the hub's resources (PDFs, videos, sections, question banks).
-5. Use provided WEB SEARCH RESULTS to answer questions about current/external info, and cite sources.
+## PHASE 1 CAPABILITIES
+You are a retrieval-grounded academic assistant, not merely a file finder. Your priority is:
+1. Answer questions from the supplied DentoVerse PDF passages and site resources.
+2. Explain the answer naturally and helpfully in the user's language, rather than dumping search results.
+3. Support follow-up questions by using the conversation and the supplied passages together.
+4. Help users find and navigate PDFs, videos, sections, and question banks.
+5. Answer general questions about how this site is organised.
+
+## PDF GROUNDING RULES (CRITICAL)
+- Treat the PDF KNOWLEDGE PASSAGES below as the authoritative local source context.
+- When they contain the answer, synthesize a clear answer and cite the exact file title and page in this format: [Title, p. X].
+- Never claim a passage says something it does not say. Never invent page numbers, file names, sections, or quotations.
+- If passages are only partially relevant, clearly say that this is the closest match and explain what it does establish.
+- If the local knowledge does not contain an exact answer, say so briefly, then provide the closest useful site result or a clearly-labelled general explanation.
+- For an Arabic query, translate and explain the English source content naturally in the same Arabic register used by the user; keep technical English terms in parentheses where useful.
 
 ## ANSWER MODES
 Respect the requested mode if the app sends one (short / detailed / step-by-step / simple / compare / summarize / dentistry). Otherwise choose the most helpful format automatically. Use short markdown (bold, bullet lists, numbered steps) — never huge walls of text.
@@ -206,6 +266,9 @@ ${sectionList || "(none provided)"}
 
 Sample of current resources (there may be more):
 ${resourceList || "(none provided)"}
+
+## RETRIEVED PDF KNOWLEDGE PASSAGES
+${knowledgeList || "No directly matching PDF passage was retrieved for this turn."}
 
 When the user asks WHERE something is, or to OPEN/FIND a resource, tell them which section to open by its label, and note that they can tap the result cards or ask you to take them there. Do not fabricate resources that are not plausibly in the hub — if unsure, guide them to the closest relevant section or offer a web/general answer instead.`;
 }
@@ -270,7 +333,8 @@ module.exports = async function handler(req, res) {
       provider: provider ? provider.name : null,
       webSearch: !!search,
       name: "Nova",
-      version: "2.0",
+      version: "3.0-phase1",
+      knowledge: KNOWLEDGE.stats || {},
     });
   }
 
@@ -286,7 +350,7 @@ module.exports = async function handler(req, res) {
   try { body = await readBody(req); } catch { body = {}; }
 
   const userMessages = Array.isArray(body.messages) ? body.messages : [];
-  const context = body.context || {};
+  const context = body.context && typeof body.context === "object" ? body.context : {};
   const mode = typeof body.mode === "string" ? body.mode : "";
   const wantWeb = body.web === true;
 
@@ -300,6 +364,13 @@ module.exports = async function handler(req, res) {
 
   const lastUser = [...clean].reverse().find((m) => m.role === "user");
   const lastText = lastUser ? lastUser.content : "";
+
+  // Retrieve server-side as well as client-side so every AI answer is grounded even if the UI index is still loading.
+  const serverKnowledge = searchKnowledge(lastText, 6);
+  context.knowledge = serverKnowledge.map((match) => ({
+    resourceId: match.resourceId, title: match.title, file: match.file, section: match.sectionLabel,
+    category: match.category, heading: match.heading, page: match.page, text: String(match.text || "").slice(0, 2400)
+  }));
 
   // Optional web search grounding.
   let sources = [];
@@ -351,6 +422,7 @@ module.exports = async function handler(req, res) {
       sources,
       provider: provider.name,
       web: sources.length > 0,
+      knowledgeSources: serverKnowledge.map(({ resourceId, title, file, sectionLabel, category, heading, page }) => ({ resourceId, title, file, sectionLabel, category, heading, page })),
     });
   } catch (err) {
     return json(res, 200, { ok: false, fallback: true, reason: "exception", detail: String(err && err.message || err) });
