@@ -639,3 +639,193 @@
   .nova-panel, .nova-msg, .nova-toast { transition: none; animation: none; }
   .nova-flash { animation: none; box-shadow: 0 0 0 3px rgba(0,212,255,.6); }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   PHASE 1 · PDF UPLOAD, THINKING ANIMATION, MESSAGE ACTIONS,
+   SCROLL-TO-BOTTOM, DRAG-AND-DROP OVERLAY
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── attach (PDF upload) button in the composer ── */
+.nova-attach {
+  width: 44px; height: 44px; flex-shrink: 0;
+  border-radius: 13px; cursor: pointer;
+  display: grid; place-items: center; font-size: 1.05rem;
+  border: 1px solid var(--nova-border);
+  background: rgba(0,20,40,.6); color: var(--sky, #8bc9ff);
+  transition: background .2s, color .2s, border-color .2s, transform .15s;
+  position: relative;
+}
+.nova-attach:hover {
+  background: rgba(0,212,255,.16);
+  border-color: var(--nova-border-strong);
+  color: var(--electric-blue, #00d4ff);
+  transform: translateY(-1px);
+}
+.nova-attach.busy { pointer-events: none; opacity: .8; }
+.nova-attach.busy::after {
+  content: ""; position: absolute; inset: 0;
+  border-radius: inherit;
+  border: 2px solid transparent;
+  border-top-color: var(--electric-blue, #00d4ff);
+  animation: novaSpin .9s linear infinite;
+}
+@keyframes novaSpin { to { transform: rotate(360deg); } }
+
+/* ── uploaded documents tray (above composer) ── */
+.nova-docs {
+  position: relative; z-index: 2;
+  display: none;
+  flex-wrap: wrap; gap: .35rem;
+  padding: .35rem .9rem .1rem;
+}
+.nova-docs.has-docs { display: flex; }
+.nova-doc-chip {
+  display: inline-flex; align-items: center; gap: .35rem;
+  padding: .3rem .55rem .3rem .4rem;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(255,107,26,.22), rgba(0,29,61,.6));
+  border: 1px solid rgba(255,171,92,.45);
+  color: var(--off-white, #e8f4ff);
+  font-size: .74rem; font-weight: 600;
+  max-width: 100%; overflow: hidden;
+}
+.nova-doc-chip .nova-doc-x {
+  border: none; background: transparent; cursor: pointer;
+  color: rgba(232,244,255,.7); font-size: .95rem; line-height: 1;
+  padding: 0 .1rem; border-radius: 6px;
+}
+.nova-doc-chip .nova-doc-x:hover { color: var(--orange-glow, #ffab5c); }
+.nova-doc-chip .nova-doc-emoji { font-size: .95rem; }
+.nova-doc-chip .nova-doc-name {
+  max-width: 180px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.nova-doc-chip .nova-doc-pages {
+  font-size: .62rem; opacity: .75; letter-spacing: .3px;
+}
+
+/* ── message action row (copy / regenerate) ── */
+.nova-msg-actions {
+  display: flex; gap: .3rem; flex-wrap: wrap;
+  margin: .3rem 0 0 2.4rem;
+  animation: novaIn .4s ease both;
+}
+.nova-panel.rtl .nova-msg-actions { margin: .3rem 2.4rem 0 0; }
+.nova-msg-act {
+  display: inline-flex; align-items: center; gap: .3rem;
+  border: 1px solid var(--nova-border);
+  background: rgba(0,20,40,.5);
+  color: rgba(139,201,255,.85);
+  font-size: .7rem; font-weight: 600;
+  padding: .22rem .5rem; border-radius: 8px;
+  cursor: pointer;
+  transition: background .2s, transform .15s, border-color .2s, color .2s;
+}
+.nova-msg-act:hover {
+  background: rgba(0,212,255,.14);
+  border-color: var(--nova-border-strong);
+  color: var(--electric-blue, #00d4ff);
+  transform: translateY(-1px);
+}
+.nova-msg-act.done { color: #38ff9e; border-color: rgba(56,255,158,.5); }
+
+/* ── richer thinking animation (glowing orb + label) ── */
+.nova-msg.typing .nova-bubble {
+  display: inline-flex; align-items: center; gap: .55rem;
+  padding: .55rem .8rem;
+  background: linear-gradient(135deg, rgba(0,53,102,.5), rgba(0,20,40,.7));
+  border: 1px solid var(--nova-border);
+}
+.nova-thinking-orb {
+  position: relative;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #9fe6ff, #00d4ff 55%, #003566 100%);
+  box-shadow: 0 0 12px rgba(0,212,255,.6);
+  animation: novaThink 1.6s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes novaThink {
+  0%,100% { transform: scale(1); box-shadow: 0 0 10px rgba(0,212,255,.55); }
+  50%     { transform: scale(1.18); box-shadow: 0 0 22px rgba(0,212,255,.85), 0 0 30px rgba(255,107,26,.35); }
+}
+
+/* ── scroll-to-bottom floating chevron ── */
+.nova-scroll-btn {
+  position: absolute;
+  right: 14px; bottom: 178px; /* above the composer */
+  z-index: 3;
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1px solid var(--nova-border-strong);
+  background: var(--nova-glass);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  color: var(--electric-blue, #00d4ff);
+  font-size: 1rem; cursor: pointer;
+  display: grid; place-items: center;
+  box-shadow: 0 6px 16px rgba(0,0,0,.4);
+  opacity: 0; transform: translateY(6px); pointer-events: none;
+  transition: opacity .25s, transform .25s;
+}
+.nova-panel.rtl .nova-scroll-btn { right: auto; left: 14px; }
+.nova-scroll-btn.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.nova-scroll-btn:hover { color: var(--orange-glow, #ffab5c); transform: translateY(-1px); }
+
+/* ── drag & drop overlay for PDF file drop ── */
+.nova-drop-overlay {
+  position: absolute; inset: 0;
+  z-index: 5;
+  border-radius: inherit;
+  display: none; place-items: center;
+  background:
+    linear-gradient(135deg, rgba(0,53,102,.55), rgba(0,8,20,.75)),
+    repeating-linear-gradient(45deg, transparent 0 12px, rgba(0,212,255,.08) 12px 24px);
+  border: 2px dashed rgba(0,212,255,.7);
+  color: #fff;
+  font-family: var(--font-heading, sans-serif);
+  text-align: center;
+  animation: novaDropIn .25s ease both;
+}
+.nova-drop-overlay.show { display: grid; }
+.nova-drop-overlay strong { font-size: 1.1rem; letter-spacing: .5px; }
+.nova-drop-overlay span {
+  display: block; margin-top: .3rem;
+  font-size: .78rem; color: var(--sky, #8bc9ff);
+}
+.nova-drop-overlay-emoji { font-size: 2.4rem; margin-bottom: .5rem; filter: drop-shadow(0 4px 10px rgba(0,212,255,.5)); }
+@keyframes novaDropIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── uploaded PDF “extraction” status card in thread ── */
+.nova-pdf-status {
+  padding: .55rem .65rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(0,212,255,.1), rgba(0,29,61,.55));
+  border: 1px solid var(--nova-border-strong);
+  display: flex; align-items: center; gap: .55rem;
+  font-size: .8rem;
+}
+.nova-pdf-status .nova-pdf-icon {
+  width: 30px; height: 30px; flex-shrink: 0;
+  border-radius: 8px; display: grid; place-items: center;
+  background: linear-gradient(135deg, #ff6b1a, #bb3e00);
+  color: #fff; font-weight: 800; font-size: .68rem; letter-spacing: .4px;
+}
+.nova-pdf-status .nova-pdf-body { min-width: 0; flex: 1; }
+.nova-pdf-status .nova-pdf-body strong {
+  display: block; color: #fff; font-size: .82rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.nova-pdf-status .nova-pdf-body span {
+  color: var(--sky, #8bc9ff); font-size: .68rem;
+}
+.nova-pdf-status .nova-pdf-progress {
+  height: 4px; margin-top: .3rem; width: 100%;
+  border-radius: 4px; background: rgba(0,212,255,.14); overflow: hidden;
+}
+.nova-pdf-status .nova-pdf-progress i {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, #00d4ff, #ff6b1a);
+  width: 0%; transition: width .3s ease;
+}
+
+/* Make thread a positioning parent for scroll button + drop overlay. */
+.nova-panel { /* already positioned */ }
+

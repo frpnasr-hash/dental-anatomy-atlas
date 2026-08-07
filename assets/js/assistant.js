@@ -81,6 +81,28 @@
       thanksFeedback: "Thanks for the feedback!",
       offlineNote: "AI brain is offline right now — using built-in smart search.",
       errNote: "Something went wrong — but the hub is fine. Try rephrasing.",
+      // New Phase 1 strings
+      attach: "Attach PDF",
+      attachTitle: "Upload a PDF to analyze",
+      dropHere: "Drop your PDF here",
+      dropSub: "Nova will read it and let you ask questions about the content",
+      readingPdf: "Reading your PDF…",
+      pdfReady: "PDF ready — ask me anything about it.",
+      pdfFailed: "I couldn't read that file. Please try a text-based PDF (not a scanned image), under 25 MB.",
+      pdfScanned: "This looks like a scanned PDF (image only). I can't extract its text in Phase 1 — try a text PDF.",
+      pdfTooBig: "That PDF is too large. Please try one under 25 MB.",
+      pdfNotSupported: "Only PDF files can be attached.",
+      pdfRemoved: "PDF removed from this conversation.",
+      pdfContext: "Talking about your PDF",
+      copy: "Copy",
+      copied: "Copied",
+      regenerate: "Regenerate",
+      scrollDown: "Jump to latest",
+      pdfPages: "pages",
+      suggestPdfSummarize: "Summarize this PDF",
+      suggestPdfKeyPoints: "Key points from my PDF",
+      suggestPdfOutline: "Show the outline",
+      pdfHeader: (name, pages) => `📄 <strong>${name}</strong> · ${pages} pages ready. Ask me to summarize, extract key points, or explain any page.`,
       modes: { auto: "Auto", short: "Short", detailed: "Detailed", steps: "Steps", simple: "Simple", compare: "Compare", summarize: "Summarize", dentistry: "Dentistry" }
     },
     ar: {
@@ -120,11 +142,36 @@
       thanksFeedback: "شكراً على تقييمك!",
       offlineNote: "الذكاء الاصطناعي غير متاح حالياً — بستخدم البحث الذكي المدمج.",
       errNote: "حصل خطأ بسيط — بس المنصة تمام. جرّب تعيد صياغة السؤال.",
+      // New Phase 1 strings
+      attach: "إرفاق PDF",
+      attachTitle: "ارفع ملف PDF علشان أقرأه",
+      dropHere: "اسحب ملف الـ PDF هنا",
+      dropSub: "نوفا هيقراه ويرد على أسئلتك عنه",
+      readingPdf: "بقرأ ملف الـ PDF بتاعك…",
+      pdfReady: "الملف جاهز — اسألني أي حاجة عنه.",
+      pdfFailed: "ماقدرتش أقرأ الملف ده. جرّب PDF نصي (مش صورة ممسوحة) وأقل من 25 ميجا.",
+      pdfScanned: "الملف ده مسحوب كصورة (Scanned) — مش قادر أستخرج نصه في المرحلة دي. جرّب ملف PDF نصي.",
+      pdfTooBig: "الملف كبير قوي. لازم يكون أقل من 25 ميجا.",
+      pdfNotSupported: "بتقبل بس ملفات PDF.",
+      pdfRemoved: "تم إزالة الملف من المحادثة.",
+      pdfContext: "بتكلم عن ملف الـ PDF بتاعك",
+      copy: "نسخ",
+      copied: "تم النسخ",
+      regenerate: "إعادة الإجابة",
+      scrollDown: "انزل لآخر رسالة",
+      pdfPages: "صفحة",
+      suggestPdfSummarize: "لخصلي الملف ده",
+      suggestPdfKeyPoints: "أهم النقاط في الملف",
+      suggestPdfOutline: "وريني فهرس الملف",
+      pdfHeader: (name, pages) => `📄 <strong>${name}</strong> · ${pages} صفحة جاهزة. تقدر تطلب مني ألخصه أو أستخرج أهم النقاط أو أشرح أي صفحة.`,
       modes: { auto: "تلقائي", short: "مختصر", detailed: "مفصّل", steps: "خطوات", simple: "مبسّط", compare: "مقارنة", summarize: "تلخيص", dentistry: "أسنان" }
     }
   };
   let UILANG = "en"; // UI chrome language (auto-switches to the user's language)
-  const t = (k) => (I18N[UILANG] && I18N[UILANG][k] != null) ? I18N[UILANG][k] : I18N.en[k];
+  const t = (k, ...args) => {
+    const v = (I18N[UILANG] && I18N[UILANG][k] != null) ? I18N[UILANG][k] : I18N.en[k];
+    return typeof v === "function" ? v(...args) : v;
+  };
 
   /* ═══════════ DOM + text helpers ═══════════ */
   const el = (tag, cls, html) => {
@@ -211,7 +258,13 @@
       }))
     };
     const messages = Memory.turns.slice(-20).concat([{ role: "user", content: userText }]);
-    const payload = { messages, context, mode: opts.mode && opts.mode !== "auto" ? opts.mode : "", web: !!opts.web };
+    // Uploaded (client-side) PDF passages — sent as extra grounded context.
+    const uploadedPdf = Array.isArray(opts.uploadedPdf) ? opts.uploadedPdf.slice(0, 4).map(m => ({
+      name: String(m.name || "uploaded.pdf"),
+      page: Number(m.page || 1),
+      text: String(m.text || "").slice(0, 2400)
+    })) : [];
+    const payload = { messages, context, mode: opts.mode && opts.mode !== "auto" ? opts.mode : "", web: !!opts.web, uploadedPdf };
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 50000);
     try {
@@ -688,26 +741,48 @@
   }
   function noMatch(q) {
     const { results } = search(q, { limit: 4 });
-    if (results.length) return { text: L(`No exact match for “${esc(q)}”. Closest resources — or browse a section:`, `مفيش نتيجة مطابقة لـ «${esc(q)}». أقرب المصادر — أو تصفّح قسم:`), cards: results.map(x => x.r), chips: sectionChips() };
-    return { text: L(`I couldn't find that in the hub. Pick a section to explore:`, `ملقتهاش في المنصة. اختار قسم تستكشفه:`), chips: sectionChips() };
+    if (results.length) {
+      return {
+        text: L(
+          `I couldn't find an exact match for “${esc(q)}”, but here are the closest resources. You can also refine your search or explore a section.`,
+          `مفيش نتيجة مطابقة لـ «${esc(q)}»، بس دي أقرب المصادر. تقدر تعدّل كلمات البحث أو تتصفح قسم.`
+        ),
+        cards: results.map(x => x.r),
+        chips: sectionChips()
+      };
+    }
+    // Truly nothing found — never leave the user with an empty response.
+    return {
+      text: L(
+        `I couldn't find that in the hub. Try one of these instead — I can also search PDFs, videos, or the question bank.`,
+        `ماحصلتش على ده في المنصة. جرّب واحد من دول — وأقدر أدوّرلك في الـ PDFs أو الفيديوهات أو بنك الأسئلة.`
+      ),
+      chips: sectionChips()
+    };
   }
   function safeFavList() { try { if (window.DentoVerse && window.DentoVerse.Favorites) return window.DentoVerse.Favorites.list(); } catch (e) {} return []; }
 
   /* ═══════════ suggestion chips (bilingual) ═══════════ */
   function starterChips() {
+    // If a PDF is already uploaded, surface PDF actions first.
+    if (window.NovaPDF && NovaPDF.hasDocs()) return pdfChips();
     if (UILANG === "ar") return [
-      { label: "🧪 لاقي ملفات البيوميتريال", q: "لاقيلي كل ملفات البيوميتريال PDF" },
-      { label: "🧠 افتح بنك الأسئلة", q: "افتح بنك الأسئلة" },
-      { label: "🎯 أذاكر إيه للامتحان؟", q: "أذاكر إيه قبل الامتحان؟" },
-      { label: "🦷 يعني إيه تسوّس؟", q: "اشرحلي يعني إيه تسوّس الأسنان ببساطة" },
-      { label: "⭐ محفوظاتي", q: "وريني المحفوظات بتاعتي" }
+      { label: "🔬 اشرحلي علم الأحياء الفموي", q: "اشرحلي إيه هو Oral Biology باختصار" },
+      { label: "🧪 افتح البيوميتريال", q: "افتح قسم البيوميتريال 2" },
+      { label: "📄 لخّص ملف PDF بتاعي", q: "لخّصلي الـ PDF المرفوع" },
+      { label: "🎬 لاقيلي الفيديوهات العملية", q: "لاقيلي فيديوهات الـ Practical" },
+      { label: "🎓 محاضرات المرحلة التانية فين؟", q: "فين محاضرات Stage 2؟" },
+      { label: "🎯 ذاكر معايا للامتحان", q: "ساعدني أذاكر للامتحان" },
+      { label: "🔎 دور في مصادر المنصة", q: "دور في مصادر المنصة" }
     ];
     return [
-      { label: "🧪 Find biomaterials PDFs", q: "Find all PDFs about biomaterials" },
-      { label: "🧠 Open the question bank", q: "Open the question bank" },
-      { label: "🎯 What should I study?", q: "What should I study before the exam?" },
-      { label: "🦷 Explain dental caries", q: "Explain dental caries simply" },
-      { label: "⭐ Show my saved", q: "Show me my saved resources" }
+      { label: "🔬 Explain Oral Biology", q: "Give me a short overview of Oral Biology" },
+      { label: "🧪 Open Biomaterials", q: "Open Biomaterials 2" },
+      { label: "📄 Summarize my PDF", q: "Summarize my uploaded PDF" },
+      { label: "🎬 Find practical videos", q: "Find practical videos" },
+      { label: "🎓 Where are Stage 2 lectures?", q: "Where are Stage 2 lectures?" },
+      { label: "🎯 Help me prepare for exams", q: "Help me prepare for exams" },
+      { label: "🔎 Search resources", q: "Search resources" }
     ];
   }
   function sectionChips() {
@@ -719,6 +794,9 @@
      ═══════════════════════════════════════════════════════════════ */
   let panelOpen = false;
   let fab, panel, thread, input, form, quickBar, modeSelect, webToggle;
+  let attachBtn, fileInput, docsBar, scrollBtn, dropOverlay;
+  // Uploaded PDFs currently in the conversation (light view models); NovaPDF holds the full data.
+  const UploadedDocs = { list: [] };
 
   function buildUI() {
     fab = el("button", "nova-fab", `
@@ -749,7 +827,16 @@
         </div>
       </header>
       <div class="nova-thread" id="nova-thread" aria-live="polite"></div>
+      <button type="button" class="nova-scroll-btn" id="nova-scroll-btn" aria-label="Scroll to latest" title="Scroll to latest">▾</button>
+      <div class="nova-drop-overlay" id="nova-drop">
+        <div>
+          <div class="nova-drop-overlay-emoji">📄</div>
+          <strong data-nova-drop-title>Drop your PDF here</strong>
+          <span data-nova-drop-sub>Nova will read it and let you ask questions about the content</span>
+        </div>
+      </div>
       <div class="nova-quick" id="nova-quick"></div>
+      <div class="nova-docs" id="nova-docs" aria-live="polite"></div>
       <div class="nova-controls">
         <label class="nova-ctl">
           <span data-nova-modelabel></span>
@@ -760,6 +847,8 @@
         </button>
       </div>
       <form class="nova-input" id="nova-form" autocomplete="off">
+        <button type="button" class="nova-attach" id="nova-attach" aria-label="Attach PDF" title="Attach PDF">📎</button>
+        <input type="file" id="nova-file" accept="application/pdf,.pdf" hidden />
         <input type="text" id="nova-q" aria-label="Message the assistant" />
         <button type="submit" class="nova-send" aria-label="Send"><span>➤</span></button>
       </form>
@@ -777,6 +866,59 @@
     quickBar = panel.querySelector("#nova-quick");
     modeSelect = panel.querySelector("#nova-mode");
     webToggle = panel.querySelector("#nova-web");
+    attachBtn = panel.querySelector("#nova-attach");
+    fileInput = panel.querySelector("#nova-file");
+    docsBar = panel.querySelector("#nova-docs");
+    scrollBtn = panel.querySelector("#nova-scroll-btn");
+    dropOverlay = panel.querySelector("#nova-drop");
+
+    // PDF attach wiring
+    if (attachBtn && fileInput) {
+      attachBtn.addEventListener("click", () => {
+        if (!window.NovaPDF || !NovaPDF.isSupported()) {
+          toast(t("pdfNotSupported"), "⚠️");
+          return;
+        }
+        fileInput.click();
+      });
+      fileInput.addEventListener("change", (e) => {
+        const files = e.target.files;
+        if (files && files.length) handleFileList(files);
+        fileInput.value = "";
+      });
+    }
+
+    // Drag & drop over the panel
+    if (dropOverlay) {
+      let dragDepth = 0;
+      const isFilesEvt = (e) => e.dataTransfer && Array.from(e.dataTransfer.types || []).includes("Files");
+      panel.addEventListener("dragenter", (e) => {
+        if (!isFilesEvt(e)) return;
+        e.preventDefault(); dragDepth++;
+        dropOverlay.classList.add("show");
+      });
+      panel.addEventListener("dragover", (e) => { if (isFilesEvt(e)) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } });
+      panel.addEventListener("dragleave", (e) => {
+        if (!isFilesEvt(e)) return;
+        dragDepth = Math.max(0, dragDepth - 1);
+        if (dragDepth === 0) dropOverlay.classList.remove("show");
+      });
+      panel.addEventListener("drop", (e) => {
+        if (!isFilesEvt(e)) return;
+        e.preventDefault(); dragDepth = 0;
+        dropOverlay.classList.remove("show");
+        handleFileList(e.dataTransfer.files);
+      });
+    }
+
+    // Scroll-to-bottom button
+    if (thread && scrollBtn) {
+      thread.addEventListener("scroll", () => {
+        const nearBottom = thread.scrollTop + thread.clientHeight >= thread.scrollHeight - 60;
+        scrollBtn.classList.toggle("show", !nearBottom);
+      });
+      scrollBtn.addEventListener("click", () => scrollThread(true));
+    }
 
     // Build mode options
     ["auto", "short", "detailed", "steps", "simple", "compare", "summarize", "dentistry"].forEach(m => {
@@ -831,8 +973,16 @@
     input.setAttribute("placeholder", t("placeholder"));
     panel.querySelector('[data-nova="clear"]').title = t("clear");
     panel.querySelector('[data-nova="close"]').title = t("close");
+    // drop overlay
+    const dt = panel.querySelector("[data-nova-drop-title]");
+    const ds = panel.querySelector("[data-nova-drop-sub]");
+    if (dt) dt.textContent = t("dropHere");
+    if (ds) ds.textContent = t("dropSub");
+    if (attachBtn) { attachBtn.title = t("attachTitle"); attachBtn.setAttribute("aria-label", t("attachTitle")); }
+    if (scrollBtn) { scrollBtn.title = t("scrollDown"); scrollBtn.setAttribute("aria-label", t("scrollDown")); }
     // mode option labels
     Array.from(modeSelect.options).forEach(o => { o.textContent = I18N[UILANG].modes[o.dataset.mode] || o.dataset.mode; });
+    renderUploadedDocs();
     updateKnowledgeStatus();
   }
   function setUILang(lang, persist) {
@@ -880,11 +1030,21 @@
     scrollThread();
     return row;
   }
-  function scrollThread() { thread.scrollTop = thread.scrollHeight; }
+  function scrollThread(force) {
+    if (!thread) return;
+    // Auto-follow only if user is already near the bottom, unless forced.
+    const nearBottom = thread.scrollTop + thread.clientHeight >= thread.scrollHeight - 120;
+    if (force || nearBottom) thread.scrollTop = thread.scrollHeight;
+    if (scrollBtn) scrollBtn.classList.toggle("show", !(nearBottom || force));
+  }
   function typingIndicator(label) {
     const row = el("div", "nova-msg bot typing");
     row.appendChild(el("div", "nova-msg-avatar", "🤖"));
-    row.appendChild(el("div", "nova-bubble", `<span class="nova-dots"><i></i><i></i><i></i></span>${label ? `<span class="nova-typing-label">${esc(label)}</span>` : ""}`));
+    row.appendChild(el("div", "nova-bubble",
+      `<span class="nova-thinking-orb" aria-hidden="true"></span>` +
+      `<span class="nova-dots" aria-hidden="true"><i></i><i></i><i></i></span>` +
+      `${label ? `<span class="nova-typing-label">${esc(label)}</span>` : ""}`
+    ));
     thread.appendChild(row);
     scrollThread();
     return row;
@@ -899,21 +1059,43 @@
   }
 
   /* ═══════════ the core turn handler (AI-first, local fallback) ═══════════ */
-  async function handleUserMessage(text) {
+  async function handleUserMessage(text, opts) {
+    opts = opts || {};
     // Auto-switch UI language to match the user.
     const det = detectLang(text);
     if (Prefs.data.lang === "auto") setUILang(det.lang, false);
 
-    pushMessage("user", esc(text), { rtl: det.rtl });
-    Memory.push("user", text);
-    persistHistory();
+    LAST_USER_TEXT = text;
+    if (!opts.regenerate) {
+      pushMessage("user", esc(text), { rtl: det.rtl });
+      Memory.push("user", text);
+      persistHistory();
+    }
 
     const useWeb = !!Prefs.data.web && (RX.web.test(text) || Prefs.data.web);
-    const typing = typingIndicator(useWeb ? t("searching") : t("thinking"));
+    const isPdfTargeted = looksLikePdfQuery(text);
+    const typing = typingIndicator(isPdfTargeted ? t("readingPdf") : (useWeb ? t("searching") : t("thinking")));
 
     const { qWords, concepts } = analyze(text);
     const knowledgeMatches = searchKnowledge(text, 6);
     const hubTargeted = isHubTargeted(text, concepts, qWords);
+    const uploadedPdfCtx = uploadedPdfContextFor(text);
+
+    // If an uploaded PDF is available AND the user's question clearly targets a PDF,
+    // prefer the local PDF path; if the AI is available we still ask it to synthesize
+    // using the uploaded passages as authoritative context.
+    if (isPdfTargeted && !AI.available) {
+      const delay = 260 + Math.min(700, text.length * 10);
+      setTimeout(() => {
+        typing.remove();
+        let reply;
+        try { reply = respondFromUploadedPdf(text) || respondLocal(text); }
+        catch (e) { reply = { text: t("errNote"), chips: pdfChips() }; }
+        const row = renderReply(reply, { rtl: det.rtl });
+        attachMessageActions(row);
+      }, delay);
+      return;
+    }
 
     // Route: hub-targeted commands → local engine (instant, deterministic).
     // Everything else → AI brain (with local fallback).
@@ -925,15 +1107,22 @@
         let reply;
         try { reply = respondLocal(text); }
         catch (e) { reply = { text: t("errNote"), chips: sectionChips() }; }
-        renderReply(reply, { rtl: det.rtl });
+        const row = renderReply(reply, { rtl: det.rtl });
+        attachMessageActions(row);
       }, delay);
       return;
     }
 
     // AI path
     let ai;
-    try { ai = await askAI(text, { mode: Prefs.data.mode, web: false, knowledge: knowledgeMatches }); }
-    catch (e) { ai = { ok: false, fallback: true }; }
+    try {
+      ai = await askAI(text, {
+        mode: Prefs.data.mode,
+        web: false,
+        knowledge: knowledgeMatches,
+        uploadedPdf: uploadedPdfCtx
+      });
+    } catch (e) { ai = { ok: false, fallback: true }; }
 
     typing.remove();
 
@@ -945,7 +1134,7 @@
       textNode.innerHTML = mdToHtml(ai.reply);
       node.appendChild(textNode);
 
-      // Ground every PDF-aware answer with exact local file/page references.
+      // Ground every PDF-aware answer with exact local file/page references (site knowledge index).
       const groundedSources = knowledgeMatches.length ? knowledgeMatches : (ai.knowledgeSources || []);
       if (groundedSources.length) node.appendChild(knowledgeSourcesBlock(groundedSources.slice(0, 4)));
 
@@ -961,8 +1150,9 @@
 
       const row = pushMessage("bot", node, { rtl: replyDet.rtl });
       attachFeedback(row, text);
+      attachMessageActions(row);
       Memory.push("assistant", ai.reply);
-      renderQuickChips(followupChips(text));
+      renderQuickChips(isPdfTargeted ? pdfChips() : followupChips(text));
       persistHistory();
       return;
     }
@@ -970,9 +1160,12 @@
     // Fallback → local brain, with a gentle note the first time.
     if (!AI.__noticedOffline) { AI.__noticedOffline = true; }
     let reply;
-    try { reply = respondLocal(text); }
-    catch (e) { reply = { text: t("errNote"), chips: sectionChips() }; }
-    renderReply(reply, { rtl: det.rtl });
+    try {
+      // If a PDF is uploaded, prefer PDF-first fallback response.
+      reply = isPdfTargeted ? (respondFromUploadedPdf(text) || respondLocal(text)) : respondLocal(text);
+    } catch (e) { reply = { text: t("errNote"), chips: sectionChips() }; }
+    const row = renderReply(reply, { rtl: det.rtl });
+    attachMessageActions(row);
   }
 
   /* Attach hub cards to an AI answer only when clearly hub-relevant. */
@@ -1193,6 +1386,290 @@
   }
   function markSeen() { try { localStorage.setItem(LS_SEEN, "1"); } catch (e) {} }
 
+  /* ═══════════════════════════════════════════════════════════════
+     PHASE 1 · CLIENT-SIDE PDF ATTACH & ANALYSIS
+     Wires the NovaPDF module into the chat: file picker + drag/drop,
+     inline extraction progress card, uploaded docs tray, PDF-aware
+     answering (summary / key points / outline / page lookup / Q&A).
+     Runs 100% in the browser using pdf.js — no server required.
+     ═══════════════════════════════════════════════════════════════ */
+
+  // Track the currently-focused uploaded doc id (last uploaded by default).
+  let CURRENT_DOC_ID = null;
+
+  function handleFileList(files) {
+    const arr = Array.from(files || []).filter(f => f && (/pdf/i.test(f.type || "") || /\.pdf$/i.test(f.name || "")));
+    if (!arr.length) { toast(t("pdfNotSupported"), "⚠️"); return; }
+    // Process sequentially to keep the browser responsive.
+    (async () => { for (const f of arr) { await processFile(f); } })();
+  }
+
+  async function processFile(file) {
+    if (!window.NovaPDF || !NovaPDF.isSupported()) { toast(t("pdfNotSupported"), "⚠️"); return; }
+
+    // Guardrails BEFORE loading pdf.js
+    if (file.size > (NovaPDF.maxFileMB * 1024 * 1024)) { toast(t("pdfTooBig"), "⚠️"); return; }
+
+    // Push a "reading…" status card into the thread and remember it for updates.
+    const statusRow = pushPdfStatus(file);
+    if (attachBtn) attachBtn.classList.add("busy");
+
+    try {
+      const meta = await NovaPDF.add(file, (page, total) => {
+        const pct = Math.max(3, Math.min(100, Math.round((page / total) * 100)));
+        updatePdfStatus(statusRow, { pct, label: `${t("readingPdf")} ${page}/${total}` });
+      });
+      if (attachBtn) attachBtn.classList.remove("busy");
+
+      if (!meta || meta.pages === 0) {
+        replacePdfStatus(statusRow, { error: t("pdfFailed") });
+        return;
+      }
+
+      // Detect scanned/image PDFs where no text was extracted.
+      if (meta.scanned) {
+        replacePdfStatus(statusRow, { error: t("pdfScanned") });
+        NovaPDF.remove(meta.id);
+        return;
+      }
+
+      // Success — replace the status card with a "ready" summary bubble.
+      CURRENT_DOC_ID = meta.id;
+      UploadedDocs.list.push({ id: meta.id, name: meta.name, pages: meta.pages });
+      renderUploadedDocs();
+
+      const doneHtml =
+        `<div class="nova-pdf-status">
+          <div class="nova-pdf-icon">PDF</div>
+          <div class="nova-pdf-body">
+            <strong>${esc(meta.name)}</strong>
+            <span>${meta.pages} ${esc(t("pdfPages"))} · ${esc(t("pdfReady"))}</span>
+          </div>
+        </div>
+        <div style="margin-top:.5rem">${t("pdfHeader", esc(meta.name), meta.pages)}</div>`;
+      statusRow.querySelector(".nova-bubble").innerHTML = doneHtml;
+      Memory.push("assistant", `[Uploaded PDF: ${meta.name}, ${meta.pages} pages] ${t("pdfReady")}`);
+      renderQuickChips(pdfChips());
+      persistHistory();
+    } catch (err) {
+      if (attachBtn) attachBtn.classList.remove("busy");
+      const msg = String(err && err.message || err);
+      const label = msg === "too_large" ? t("pdfTooBig") : msg === "not_pdf" ? t("pdfNotSupported") : t("pdfFailed");
+      replacePdfStatus(statusRow, { error: label });
+    }
+  }
+
+  function pushPdfStatus(file) {
+    const bubble = el("div", "nova-bubble");
+    bubble.innerHTML =
+      `<div class="nova-pdf-status">
+        <div class="nova-pdf-icon">PDF</div>
+        <div class="nova-pdf-body">
+          <strong>${esc(file.name || "document.pdf")}</strong>
+          <span data-nova-pdf-lbl>${esc(t("readingPdf"))}</span>
+          <div class="nova-pdf-progress"><i data-nova-pdf-bar style="width:5%"></i></div>
+        </div>
+      </div>`;
+    const row = el("div", "nova-msg bot");
+    row.appendChild(el("div", "nova-msg-avatar", "🤖"));
+    row.appendChild(bubble);
+    thread.appendChild(row);
+    scrollThread(true);
+    return row;
+  }
+
+  function updatePdfStatus(row, { pct, label }) {
+    if (!row) return;
+    const bar = row.querySelector("[data-nova-pdf-bar]");
+    const lbl = row.querySelector("[data-nova-pdf-lbl]");
+    if (bar && pct != null) bar.style.width = pct + "%";
+    if (lbl && label) lbl.textContent = label;
+  }
+
+  function replacePdfStatus(row, { error }) {
+    if (!row) return;
+    const bubble = row.querySelector(".nova-bubble");
+    if (!bubble) return;
+    bubble.innerHTML = `<div style="color:#ffab5c">⚠️ ${esc(error || t("pdfFailed"))}</div>`;
+    persistHistory();
+  }
+
+  function renderUploadedDocs() {
+    if (!docsBar) return;
+    docsBar.innerHTML = "";
+    const list = (window.NovaPDF && NovaPDF.list && NovaPDF.list()) || [];
+    // Reconcile UploadedDocs.list against NovaPDF's authoritative list.
+    UploadedDocs.list = list.map(m => ({ id: m.id, name: m.name, pages: m.pages }));
+    if (!UploadedDocs.list.length) { docsBar.classList.remove("has-docs"); return; }
+    docsBar.classList.add("has-docs");
+    UploadedDocs.list.forEach(d => {
+      const chip = el("span", "nova-doc-chip");
+      chip.innerHTML =
+        `<span class="nova-doc-emoji">📄</span>` +
+        `<span class="nova-doc-name" title="${esc(d.name)}">${esc(d.name)}</span>` +
+        `<span class="nova-doc-pages">· ${d.pages}</span>` +
+        `<button type="button" class="nova-doc-x" aria-label="Remove" title="Remove">✕</button>`;
+      chip.querySelector(".nova-doc-x").addEventListener("click", () => {
+        try { NovaPDF.remove(d.id); } catch (e) {}
+        if (CURRENT_DOC_ID === d.id) CURRENT_DOC_ID = null;
+        renderUploadedDocs();
+        toast(t("pdfRemoved"), "🗑️");
+      });
+      docsBar.appendChild(chip);
+    });
+  }
+
+  /* Intent detection for PDF-focused questions once at least one PDF is uploaded. */
+  const PDF_INTENT_RX = /\b(this pdf|the pdf|my pdf|this document|the document|this file|the file|uploaded|attached|page|chapter|summar|outline|key ?points?|main points?|explain (page|paragraph|section)|what does (this|page)|list the (headings|sections))\b|الملف|المستند|صفحة|صفحه|فصل|شابتر|لخص|لخّص|النقاط|فهرس|شرح الصفحه|شرح الصفحة|اشرح الصفحه|اشرح الصفحة|في الملف|من الملف|بتاعي/i;
+
+  function looksLikePdfQuery(text) {
+    if (!window.NovaPDF || !NovaPDF.hasDocs()) return false;
+    if (PDF_INTENT_RX.test(text)) return true;
+    // Also accept a bare page reference: "page 12", "صفحة 5"
+    if (NovaPDF.detectPageRequest && NovaPDF.detectPageRequest(text) != null) return true;
+    return false;
+  }
+
+  const SUMMARY_RX = /\b(summari[sz]e|summary|overview|tl;?dr|briefly)\b|لخص|لخّص|ملخص|بختصار/i;
+  const KEYPTS_RX  = /\b(key ?points?|main points?|highlights?|important|takeaways?)\b|أهم النقاط|اهم النقاط|النقاط الرئيس|النقاط الأساسية|النقاط الاساسيه|هاي لايت/i;
+  const OUTLINE_RX = /\b(outline|table of contents|toc|headings?|structure)\b|فهرس|الفهرس|العناوين|الهيكل/i;
+
+  function respondFromUploadedPdf(query) {
+    if (!window.NovaPDF) return null;
+    const docId = CURRENT_DOC_ID || (NovaPDF.latest() && NovaPDF.latest().id) || null;
+    const doc = docId ? { id: docId, name: (NovaPDF.list().find(x => x.id === docId) || {}).name } : null;
+    if (!doc) return null;
+
+    // 1) Specific page: "what does page 12 explain?" / "صفحة 5"
+    const pageNum = NovaPDF.detectPageRequest(query);
+    if (pageNum != null) {
+      const pg = NovaPDF.getPage(pageNum, docId);
+      if (!pg) return { text: L(`Page ${pageNum} isn't in <strong>${esc(doc.name)}</strong>.`, `الصفحة ${pageNum} مش موجودة في <strong>${esc(doc.name)}</strong>.`) };
+      const excerpt = trim(pg.text, 900) || L("(This page contains mostly images or is blank.)", "(الصفحة دي تقريباً كلها صور أو فاضية.)");
+      return {
+        text: L(
+          `Here's what page <strong>${pg.page}</strong> of <em>${esc(doc.name)}</em> says:<br><br>${esc(excerpt).replace(/\n+/g, "<br>")}`,
+          `اللي مكتوب في صفحة <strong>${pg.page}</strong> من <em>${esc(doc.name)}</em>:<br><br>${esc(excerpt).replace(/\n+/g, "<br>")}`
+        ),
+        chips: pdfChips()
+      };
+    }
+
+    // 2) Outline / TOC
+    if (OUTLINE_RX.test(query)) {
+      const heads = NovaPDF.outline(docId) || [];
+      if (!heads.length) return { text: L(`I couldn't detect a clear outline in <strong>${esc(doc.name)}</strong>. Ask for a summary or key points instead.`, `ماقدرتش أستنتج فهرس واضح لـ <strong>${esc(doc.name)}</strong>. جرّب اطلب ملخص أو أهم النقاط.`), chips: pdfChips() };
+      const lines = heads.slice(0, 24).map(h => `- <strong>p.${h.page}</strong> · ${esc(h.text)}`).join("<br>");
+      return { text: L(`Outline of <em>${esc(doc.name)}</em>:`, `فهرس <em>${esc(doc.name)}</em>:`) + "<br>" + lines, chips: pdfChips() };
+    }
+
+    // 3) Summary
+    if (SUMMARY_RX.test(query) && !KEYPTS_RX.test(query)) {
+      const pts = NovaPDF.keyPoints(docId, 8);
+      if (!pts.length) return { text: L(`I couldn't extract enough text to summarize <strong>${esc(doc.name)}</strong> yet.`, `النص المتاح مش كفاية علشان ألخّص <strong>${esc(doc.name)}</strong>.`), chips: pdfChips() };
+      const lines = pts.map(p => `- <strong>p.${p.page}</strong> — ${esc(trim(p.text, 220))}`).join("<br>");
+      return {
+        text: L(`Here's a compact summary of <em>${esc(doc.name)}</em>, distilled from the most information-dense sentences:`,
+                `دي خلاصة مركّزة لـ <em>${esc(doc.name)}</em>، مستخلصة من أكثر الجمل معلوماتياً:`) + "<br><br>" + lines,
+        chips: pdfChips()
+      };
+    }
+
+    // 4) Key points
+    if (KEYPTS_RX.test(query)) {
+      const pts = NovaPDF.keyPoints(docId, 10);
+      if (!pts.length) return { text: L(`I couldn't extract key points from <strong>${esc(doc.name)}</strong>.`, `ماقدرتش أستخرج نقاط أساسية من <strong>${esc(doc.name)}</strong>.`), chips: pdfChips() };
+      const lines = pts.map(p => `- <strong>p.${p.page}</strong> — ${esc(trim(p.text, 220))}`).join("<br>");
+      return { text: L(`Key points from <em>${esc(doc.name)}</em>:`, `أهم النقاط في <em>${esc(doc.name)}</em>:`) + "<br><br>" + lines, chips: pdfChips() };
+    }
+
+    // 5) Generic Q&A: retrieve top passages, then either let the AI synthesize or fall back to a passage.
+    const matches = NovaPDF.search(query, { docId, limit: 4 });
+    if (!matches.length) {
+      // No hits: give a friendly nudge and offer alternatives.
+      return {
+        text: L(
+          `I didn't find that in <strong>${esc(doc.name)}</strong>. Try asking about a specific page, or type “summarize this PDF”.`,
+          `ماحصلتش على ده في <strong>${esc(doc.name)}</strong>. جرّب تسأل عن صفحة معينة، أو اكتب «لخّصلي الملف ده».`
+        ),
+        chips: pdfChips()
+      };
+    }
+    const top = matches[0];
+    const excerpt = trim(top.text, 520);
+    return {
+      text: L(
+        `From <em>${esc(doc.name)}</em>, page <strong>${top.page}</strong>:<br><br>${esc(excerpt).replace(/\n+/g, "<br>")}`,
+        `من ملف <em>${esc(doc.name)}</em>، صفحة <strong>${top.page}</strong>:<br><br>${esc(excerpt).replace(/\n+/g, "<br>")}`
+      ),
+      chips: pdfChips(),
+      _pdfMatches: matches
+    };
+  }
+
+  /* Build context blocks to POST to /api/nova so the LLM can synthesize a natural answer. */
+  function uploadedPdfContextFor(query) {
+    if (!window.NovaPDF || !NovaPDF.hasDocs()) return [];
+    const docId = CURRENT_DOC_ID || (NovaPDF.latest() && NovaPDF.latest().id) || null;
+    return NovaPDF.contextFor(query, { docId, limit: 4 }) || [];
+  }
+
+  function pdfChips() {
+    if (UILANG === "ar") return [
+      { label: "🔽 " + t("suggestPdfSummarize"), q: "لخّصلي الملف ده" },
+      { label: "🎯 " + t("suggestPdfKeyPoints"), q: "استخرج أهم النقاط من الملف" },
+      { label: "🗂️ " + t("suggestPdfOutline"), q: "وريني فهرس الملف" },
+      { label: "🔎 اشرح صفحة معينة", q: "اشرحلي صفحة رقم " }
+    ];
+    return [
+      { label: "🔽 " + t("suggestPdfSummarize"), q: "Summarize this PDF for me" },
+      { label: "🎯 " + t("suggestPdfKeyPoints"), q: "Give me the key points from this PDF" },
+      { label: "🗂️ " + t("suggestPdfOutline"), q: "Show me the outline of this PDF" },
+      { label: "🔎 Explain a page", q: "Explain page " }
+    ];
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     PHASE 1 · MESSAGE ACTIONS — Copy answer + Regenerate response
+     ═══════════════════════════════════════════════════════════════ */
+
+  // Track the last user question so "Regenerate" can rerun it.
+  let LAST_USER_TEXT = "";
+
+  function attachMessageActions(row) {
+    if (!row) return;
+    // Avoid duplicating actions on the same row.
+    if (row.querySelector(".nova-msg-actions")) return;
+    const bar = el("div", "nova-msg-actions");
+    bar.innerHTML =
+      `<button type="button" class="nova-msg-act" data-msg-act="copy">⧉ <span>${esc(t("copy"))}</span></button>` +
+      `<button type="button" class="nova-msg-act" data-msg-act="regen">↻ <span>${esc(t("regenerate"))}</span></button>`;
+    bar.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-msg-act]"); if (!b) return;
+      if (b.dataset.msgAct === "copy") {
+        const bubble = row.querySelector(".nova-bubble");
+        const text = bubble ? bubble.innerText.trim() : "";
+        const done = () => { b.classList.add("done"); const s = b.querySelector("span"); if (s) s.textContent = t("copied"); toast(t("copied"), "⧉"); };
+        try {
+          if (navigator.clipboard && text) navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
+          else fallbackCopy(text, done);
+        } catch (err) { fallbackCopy(text, done); }
+      } else if (b.dataset.msgAct === "regen") {
+        if (!LAST_USER_TEXT) return;
+        // Remove the current bot row and any trailing feedback siblings so we can rerun.
+        // Only remove the very last bot message + its actions/feedback bars.
+        const nextSiblings = [];
+        let n = row.nextSibling;
+        while (n) { nextSiblings.push(n); n = n.nextSibling; }
+        nextSiblings.forEach(s => s.remove());
+        row.remove();
+        handleUserMessage(LAST_USER_TEXT, { regenerate: true });
+      }
+    });
+    row.parentNode && row.parentNode.insertBefore(bar, row.nextSibling);
+    scrollThread();
+  }
+
   /* ═══════════ BOOT ═══════════ */
   function boot() {
     Prefs.load(); Memory.load(); Feedback.load();
@@ -1219,6 +1696,9 @@
     search,
     searchKnowledge,
     knowledgeStatus: () => ({ ready: Knowledge.ready, stats: Knowledge.data.stats || {} }),
-    aiStatus: () => ({ ...AI })
+    aiStatus: () => ({ ...AI }),
+    /** Programmatically attach a File (e.g. from a page-level dropzone). */
+    attachPdf: (file) => processFile(file),
+    uploadedPdfs: () => (window.NovaPDF && NovaPDF.list()) || []
   };
 })();
