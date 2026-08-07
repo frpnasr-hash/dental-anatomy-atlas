@@ -206,7 +206,7 @@ async function runWebSearch(provider, query) {
 }
 
 /* ───────── system prompt (the heart of Nova) ───────── */
-function buildSystemPrompt(ctx) {
+function buildSystemPrompt(ctx, uploadedPdf) {
   const site = ctx && ctx.site ? ctx.site : {};
   const sections = (ctx && ctx.sections) || [];
   const resources = (ctx && ctx.topResources) || [];
@@ -219,12 +219,16 @@ function buildSystemPrompt(ctx) {
   const knowledgeList = knowledge.slice(0, 8).map((item, index) =>
     `[PDF ${index + 1}] ${item.title}\nSection: ${item.section || ""} · Category: ${item.category || ""} · Page: ${item.page}\nFile: ${item.file}\nHeading: ${item.heading || ""}\nExtracted text:\n${String(item.text || "").slice(0, 2400)}`
   ).join("\n\n");
+  const uploadedList = (uploadedPdf || []).slice(0, 4).map((item, index) =>
+    `[USER PDF PASSAGE ${index + 1}] ${item.name || "uploaded.pdf"} · page ${item.page}\n${String(item.text || "").slice(0, 2400)}`
+  ).join("\n\n");
 
   return `You are **Nova**, the premium AI academic assistant embedded in **${site.name || "DentoVerse"}** — a futuristic dental-student study hub created by ${site.author || "Abdel Rahman Teba"}.
 
 ## IDENTITY & TONE
 - You are intelligent, warm, professional and genuinely helpful — like an expert tutor and friendly companion.
 - Keep the futuristic, elegant DentoVerse spirit. Be concise but complete.
+- You are a real conversational assistant, not a search engine. Answer general questions, explain concepts, compare topics, summarize information, handle follow-ups, and maintain conversation context. Never sound robotic.
 
 ## LANGUAGE (VERY IMPORTANT)
 - You are fully multilingual. Detect the user's language from THEIR message and reply in the SAME language and register:
@@ -267,8 +271,17 @@ ${sectionList || "(none provided)"}
 Sample of current resources (there may be more):
 ${resourceList || "(none provided)"}
 
-## RETRIEVED PDF KNOWLEDGE PASSAGES
-${knowledgeList || "No directly matching PDF passage was retrieved for this turn."}
+## RETRIEVED PDF KNOWLEDGE PASSAGES (from the DentoVerse library — authoritative for site content)
+${knowledgeList || "No directly matching site PDF passage was retrieved for this turn."}
+
+## USER-UPLOADED PDF PASSAGES (attached in this chat — authoritative for that document)
+${uploadedList || "No user PDF is currently attached to this conversation."}
+- When the user asks about "this PDF", "my PDF", a specific page, an outline, key points, or a summary, treat the USER PDF PASSAGES above as the primary source. Cite pages as [uploaded.pdf, p. X] using the actual file name.
+- Never invent page numbers or content that is not in the passages. If the passages do not cover the question, say so clearly and offer to explain a section they can point to.
+
+## FOLLOW-UP & CONVERSATION CONTEXT
+- Read the previous turns and connect the user's short follow-up questions ("tell me more", "why?", "and in Arabic?", "give an example") to the current topic. Never restart from scratch.
+- If the user seems to reference "it", "that", "this topic" — resolve it from the last topic naturally.
 
 When the user asks WHERE something is, or to OPEN/FIND a resource, tell them which section to open by its label, and note that they can tap the result cards or ask you to take them there. Do not fabricate resources that are not plausibly in the hub — if unsure, guide them to the closest relevant section or offer a web/general answer instead.`;
 }
@@ -353,6 +366,15 @@ module.exports = async function handler(req, res) {
   const context = body.context && typeof body.context === "object" ? body.context : {};
   const mode = typeof body.mode === "string" ? body.mode : "";
   const wantWeb = body.web === true;
+  // Sanitize client-supplied uploaded PDF passages (already extracted in the browser).
+  const uploadedPdf = Array.isArray(body.uploadedPdf) ? body.uploadedPdf
+    .filter((p) => p && typeof p.text === "string")
+    .slice(0, 4)
+    .map((p) => ({
+      name: String(p.name || "uploaded.pdf").slice(0, 180),
+      page: Number.isFinite(+p.page) ? +p.page : 1,
+      text: String(p.text || "").slice(0, 2600),
+    })) : [];
 
   // Sanitize & trim conversation.
   const clean = userMessages
@@ -389,7 +411,7 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  let sysPrompt = buildSystemPrompt(context);
+  let sysPrompt = buildSystemPrompt(context, uploadedPdf);
   if (mode) {
     const modeHint = {
       short: "Answer briefly in 1-3 sentences.",
@@ -409,9 +431,11 @@ module.exports = async function handler(req, res) {
   const messages = [{ role: "system", content: sysPrompt }, ...clean];
 
   try {
+    // Slightly lower temperature when we're grounding on a user PDF, to reduce fabrication.
+    const genOpts = uploadedPdf.length ? { temperature: 0.35 } : {};
     const result = provider.kind === "gemini"
-      ? await callGemini(provider, messages, {})
-      : await callOpenAI(provider, messages, {});
+      ? await callGemini(provider, messages, genOpts)
+      : await callOpenAI(provider, messages, genOpts);
 
     if (result.error) {
       return json(res, 200, { ok: false, fallback: true, reason: "llm_error", detail: result.error });
@@ -422,6 +446,7 @@ module.exports = async function handler(req, res) {
       sources,
       provider: provider.name,
       web: sources.length > 0,
+      usedUploadedPdf: uploadedPdf.length > 0,
       knowledgeSources: serverKnowledge.map(({ resourceId, title, file, sectionLabel, category, heading, page }) => ({ resourceId, title, file, sectionLabel, category, heading, page })),
     });
   } catch (err) {
