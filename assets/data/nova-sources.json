@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "updated": "2026-08-08",
+  "description": "Nova's approved external knowledge allowlist. Nova can ONLY cite, summarize or search these sources when web mode is enabled. Edit this file to expand Nova's safe external knowledge — the live site picks it up automatically on the next refresh.",
+  "policy": {
+    "web_search_enabled_default": false,
+    "max_results_per_query": 5,
+    "site_knowledge_always_preferred": true
+  },
+  "sources": [
+    {
+      "id": "pubmed",
+      "label": "PubMed / NCBI",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/",
+      "host": "pubmed.ncbi.nlm.nih.gov",
+      "category": "academic",
+      "trust": "high",
+      "tags": ["dentistry", "research", "evidence", "papers"],
+      "language": ["en"],
+      "note": "Peer-reviewed biomedical and dental research."
+    },
+    {
+      "id": "nidcr",
+      "label": "NIDCR — NIH",
+      "url": "https://www.nidcr.nih.gov/",
+      "host": "nidcr.nih.gov",
+      "category": "academic",
+      "trust": "high",
+      "tags": ["dentistry", "institute", "patient-care", "research"],
+      "language": ["en"],
+      "note": "U.S. National Institute of Dental and Craniofacial Research."
+    },
+    {
+      "id": "ada",
+      "label": "American Dental Association",
+      "url": "https://www.ada.org/",
+      "host": "ada.org",
+      "category": "professional",
+      "trust": "high",
+      "tags": ["dentistry", "guidelines", "standards", "clinical"],
+      "language": ["en"],
+      "note": "Authoritative clinical and professional dental guidelines."
+    },
+    {
+      "id": "who-oral-health",
+      "label": "WHO — Oral Health",
+      "url": "https://www.who.int/health-topics/oral-health",
+      "host": "who.int",
+      "category": "professional",
+      "trust": "high",
+      "tags": ["oral-health", "public-health", "guidelines"],
+      "language": ["en"],
+      "note": "World Health Organization oral health resources."
+    },
+    {
+      "id": "wikipedia",
+      "label": "Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Category:Dentistry",
+      "host": "en.wikipedia.org",
+      "category": "encyclopedic",
+      "trust": "medium",
+      "tags": ["dentistry", "anatomy", "definitions", "overview"],
+      "language": ["en"],
+      "note": "General encyclopedic starting point — good overviews, not for clinical decisions."
+    },
+    {
+      "id": "wikipedia-ar",
+      "label": "Wikipedia (العربية)",
+      "url": "https://ar.wikipedia.org/wiki/%D8%B7%D8%A8_%D8%A7%D9%84%D8%A3%D8%B3%D9%86%D8%A7%D9%86",
+      "host": "ar.wikipedia.org",
+      "category": "encyclopedic",
+      "trust": "medium",
+      "tags": ["طب الأسنان", "تشريح", "مقدمة"],
+      "language": ["ar"],
+      "note": "Arabic-language overview for dental topics."
+    },
+    {
+      "id": "mayo-clinic",
+      "label": "Mayo Clinic — Dental",
+      "url": "https://www.mayoclinic.org/diseases-conditions",
+      "host": "mayoclinic.org",
+      "category": "patient-education",
+      "trust": "high",
+      "tags": ["dentistry", "oral-health", "patient-info"],
+      "language": ["en"],
+      "note": "Reliable patient-facing dental and oral health explanations."
+    }
+  ],
+  "topic_aliases": {
+    "enamel": ["enamel", "tooth enamel", "dental enamel", "mineralized tissue"],
+    "dentin": ["dentin", "dentine", "ivory", "tooth body"],
+    "pulp": ["dental pulp", "pulp chamber", "pulpitis", "root canal"],
+    "biomaterials": ["biomaterials", "dental materials", "restorative materials", "impression materials"],
+    "oral-biology": ["oral biology", "oral microbiology", "saliva", "oral ecology"],
+    "dental-anatomy": ["dental anatomy", "tooth morphology", "dentition", "tooth structure"]
+  }
+}

@@ -77,10 +77,24 @@
   </div>
 </footer>
 
+<!--
+  Nova AI stack — load order matters.
+   1. data.js / hub.js / enhance.js  → existing site shell (NO CHANGES).
+   2. nova-pdf.js                    → existing client-side PDF module (NO CHANGES).
+   3. nova-core.js                   → NEW · modular self-improving brain.
+   4. nova-tools.js                  → NEW · tool registry.
+   5. assistant.js                   → chat UI; existing (NO BREAKING CHANGES).
+   6. nova-chat.js                   → NEW · Phase 2 chat bridge (additive).
+  Existing globals (window.SECTIONS, window.RESOURCES, window.PINNED_IDS,
+  window.NovaPDF, window.DentoVerse, window.NovaAssistant) keep working.
+-->
 <script src="assets/js/data.js"></script>
 <script src="assets/js/hub.js"></script>
 <script src="assets/js/enhance.js"></script>
 <script src="assets/js/nova-pdf.js"></script>
+<script src="assets/js/nova-core.js"></script>
+<script src="assets/js/nova-tools.js"></script>
 <script src="assets/js/assistant.js"></script>
+<script src="assets/js/nova-chat.js"></script>
 </body>
 </html>

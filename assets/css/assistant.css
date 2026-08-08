@@ -829,3 +829,175 @@
 /* Make thread a positioning parent for scroll button + drop overlay. */
 .nova-panel { /* already positioned */ }
 
+/* ═══════════════════════════════════════════════════════════════
+   PHASE 2 · PREMIUM ADDITIONS
+   — NovaPhase2 bridge styles: tool outputs, comparison table,
+     freshness banner, signal chips, focus-mode emphasis.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── compact tool-card (returned by NovaTools.*) ── */
+.nova-tool-card {
+  display: flex; align-items: center; gap: .55rem;
+  padding: .5rem .7rem;
+  border-radius: 12px;
+  background: linear-gradient(160deg, rgba(0,53,102,.32), rgba(0,20,40,.55));
+  border: 1px solid var(--nova-border);
+  font-size: .78rem; font-weight: 700; letter-spacing: .3px;
+  color: var(--off-white, #e8f4ff);
+}
+.nova-tool-card .nova-tool-icon {
+  width: 28px; height: 28px; flex-shrink: 0;
+  border-radius: 8px; display: grid; place-items: center;
+  background: linear-gradient(135deg, #00d4ff, #003566 80%, #ff6b1a 130%);
+  box-shadow: 0 4px 12px rgba(0,212,255,.32);
+  font-size: .95rem;
+}
+.nova-tool-card .nova-tool-name {
+  color: var(--electric-blue, #00d4ff); text-transform: uppercase; letter-spacing: .6px;
+}
+.nova-tool-card .nova-tool-meta {
+  margin-left: auto; font-size: .66rem; color: rgba(139,201,255,.7);
+  font-weight: 600;
+}
+.nova-panel.rtl .nova-tool-card .nova-tool-meta { margin-left: 0; margin-right: auto; }
+
+/* ── comparison renderer (used by NovaPhase2.renderToolComparison) ── */
+.nova-compare {
+  margin-top: .25rem;
+  padding: .6rem .65rem;
+  border-radius: 14px;
+  background: linear-gradient(160deg, rgba(0,212,255,.08), rgba(0,20,40,.55));
+  border: 1px solid rgba(0,212,255,.26);
+  display: grid; gap: .5rem;
+}
+.nova-compare-head {
+  display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+  font-family: var(--font-heading, sans-serif);
+  font-size: .9rem;
+  color: #fff;
+}
+.nova-compare-head strong { color: var(--electric-blue, #00d4ff); }
+.nova-compare-vs {
+  font-size: .7rem; font-weight: 800; padding: .12rem .5rem;
+  border-radius: 6px; background: var(--gradient-orange, linear-gradient(135deg,#ff6b1a,#ffab5c));
+  color: #1a0900; letter-spacing: .6px;
+}
+.nova-compare-pill {
+  font-size: .58rem; font-weight: 900; padding: .18rem .45rem;
+  border-radius: 6px;
+  background: rgba(0,212,255,.2); color: #9fe6ff; letter-spacing: .8px;
+}
+.nova-compare-pill.b { background: rgba(255,107,26,.2); color: var(--orange-glow,#ffab5c); }
+.nova-compare-cols {
+  display: grid; grid-template-columns: 1fr 1fr; gap: .5rem;
+}
+.nova-panel.rtl .nova-compare-cols { direction: rtl; }
+.nova-compare-col {
+  background: rgba(2,15,31,.62);
+  border: 1px solid rgba(139,201,255,.16);
+  border-radius: 10px;
+  padding: .55rem .65rem;
+  font-size: .82rem;
+  box-shadow: inset 3px 0 0 rgba(0,212,255,.6);
+}
+.nova-panel.rtl .nova-compare-col { box-shadow: inset -3px 0 0 rgba(0,212,255,.6); }
+.nova-compare-col strong {
+  color: #fff; font-size: .85rem; margin-bottom: .35rem; display: block;
+}
+.nova-compare-foot {
+  font-size: .78rem; color: var(--sky, #8bc9ff);
+  line-height: 1.45;
+}
+
+@media (max-width: 520px) {
+  .nova-compare-cols { grid-template-columns: 1fr; }
+}
+
+/* ── freshness banner (shown when index is older than recommended) ── */
+.nova-freshness {
+  display: flex; align-items: center; gap: .55rem;
+  padding: .55rem .75rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255,171,92,.18), rgba(0,29,61,.6));
+  border: 1px solid rgba(255,171,92,.55);
+  font-size: .78rem; line-height: 1.4;
+}
+.nova-freshness strong { color: var(--orange-glow, #ffab5c); }
+.nova-freshness .nova-freshness-act {
+  margin-left: auto;
+  border: 1px solid var(--nova-border-strong);
+  background: rgba(0,212,255,.14);
+  color: var(--electric-blue, #00d4ff);
+  border-radius: 9px; padding: .32rem .55rem; font-size: .7rem;
+  font-weight: 700; cursor: pointer;
+}
+.nova-panel.rtl .nova-freshness .nova-freshness-act { margin-left: 0; margin-right: auto; }
+
+/* ── personalized chips (recent topics, favourite resources) ── */
+.nova-personalized {
+  display: flex; align-items: center; gap: .35rem;
+  font-size: .66rem; color: rgba(139,201,255,.55);
+  padding: 0 .9rem .15rem; letter-spacing: .3px; text-transform: uppercase;
+}
+.nova-personalized strong { color: var(--orange-glow, #ffab5c); font-weight: 800; letter-spacing: .6px; }
+.nova-panel.rtl .nova-personalized { direction: rtl; }
+
+/* ── follow-up chips (newer, more capable looking) ── */
+.nova-chip {
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(0,53,102,.6), rgba(0,8,20,.6));
+  border: 1px solid rgba(0,212,255,.28);
+  font-family: var(--font-body, sans-serif);
+  font-size: .76rem; font-weight: 600;
+  padding: .38rem .66rem;
+  display: inline-flex; align-items: center; gap: .35rem;
+  cursor: pointer;
+  color: var(--off-white, #e8f4ff);
+  transition: background .2s, transform .15s, border-color .2s, color .2s;
+}
+.nova-chip:hover {
+  background: rgba(0,212,255,.18);
+  border-color: var(--nova-border-strong);
+  color: var(--electric-blue, #00d4ff);
+  transform: translateY(-1px);
+}
+
+/* ── premium message grouping (consecutive same-role turns) ── */
+.nova-msg + .nova-msg.user { margin-top: -.35rem; }
+.nova-msg + .nova-msg.bot  { margin-top: -.35rem; }
+
+/* ── focus-mode dim (assistant collapses controls when reading) ── */
+.nova-panel.focus-mode .nova-controls,
+.nova-panel.focus-mode .nova-quick { opacity: .35; pointer-events: none; transition: opacity .25s; }
+.nova-panel:not(.focus-mode) .nova-controls,
+.nova-panel:not(.focus-mode) .nova-quick { opacity: 1; pointer-events: auto; transition: opacity .25s; }
+
+/* Premium markdown code block for inline dental formulae / Mnemonics */
+.nova-md code {
+  background: linear-gradient(120deg, rgba(0,212,255,.15), rgba(255,107,26,.1));
+  border: 1px solid rgba(0,212,255,.28);
+}
+
+/* 'Nova is processing…' progress rail during longer LLM calls */
+.nova-progress {
+  position: relative; height: 2px; overflow: hidden; border-radius: 2px;
+  background: rgba(0,212,255,.18);
+}
+.nova-progress > i {
+  position: absolute; top: 0; left: 0; bottom: 0; width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(0,212,255,.8), transparent);
+  animation: novaProgress 1.6s ease-in-out infinite;
+}
+@keyframes novaProgress { from { left: -30%; } to { left: 100%; } }
+
+/* Mic / speak placeholder for Phase-3 (kept layout-stable for future wiring) */
+.nova-voice-btn {
+  width: 36px; height: 36px; border-radius: 12px;
+  border: 1px solid var(--nova-border); background: rgba(0,20,40,.6);
+  color: var(--sky, #8bc9ff); display: grid; place-items: center;
+  font-size: .95rem; cursor: pointer;
+  transition: background .2s, color .2s, border-color .2s;
+}
+.nova-voice-btn:hover { background: rgba(0,212,255,.16); color: var(--electric-blue,#00d4ff); border-color: var(--nova-border-strong); }
+
+
