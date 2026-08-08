@@ -3,6 +3,9 @@
   "functions": {
     "api/nova.js": {
       "maxDuration": 60
+    },
+    "api/nova-image.js": {
+      "maxDuration": 60
     }
   },
   "headers": [
