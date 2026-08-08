@@ -590,12 +590,27 @@
   }
 
   /* ═══════════════════════════════════════════════════════════════
-     10 · BACKEND ADAPTER — safe fallback, future-ready
+     10 · BACKEND ADAPTER — real generation pipeline
+     ───────────────────────────────────────────────────────────────
+     Model-agnostic client for POST /api/nova-image (a provider chain
+     with a keyless built-in default), plus a pure client-side direct
+     fallback so generation still works even when the site is served
+     statically without the API route. Emits status events so the UI
+     can show a real progress pipeline:
+       preparing → requesting → rendering → done | error
      ═══════════════════════════════════════════════════════════════ */
+  const FORMAT_PIXELS = {
+    square:    { w: 1024, h: 1024 }, portrait:  { w: 960,  h: 1280 },
+    landscape: { w: 1280, h: 960  }, banner:    { w: 1344, h: 768  },
+    story:     { w: 768,  h: 1344 }, poster:    { w: 832,  h: 1248 },
+    card:      { w: 1200, h: 960  }, thumbnail: { w: 1280, h: 720  }
+  };
+  const randomSeed = () => Math.floor(Math.random() * 2147483646) + 1;
+
   const Backend = {
-    available: false, provider: null, probed: false,
-    async probe() {
-      if (this.probed) return this.available;
+    available: false, provider: null, providers: [], builtinDefault: false, probed: false,
+    async probe(force) {
+      if (this.probed && !force) return this.available;
       this.probed = true;
       try {
         const r = await fetch("/api/nova-image", { method: "GET" });
@@ -603,31 +618,121 @@
           const d = await r.json();
           this.available = !!(d && d.ok && d.imageGeneration);
           this.provider = (d && d.provider) || null;
+          this.providers = (d && d.providers) || [];
+          this.builtinDefault = !!(d && d.builtinDefault);
         }
       } catch (e) { this.available = false; }
+      // Even without the API route (static hosting), the direct
+      // client-side fallback keeps generation alive.
+      if (!this.available) { this.available = true; this.provider = "direct"; this.directOnly = true; }
       return this.available;
     },
-    /* Generate via the server if a backend is configured. Returns
-       { ok, images:[{url}], provider } or { ok:false, reason } */
-    async generate(payload) {
-      if (!this.available) return { ok: false, reason: "no_backend" };
+    /* Pure client-side generation URL (keyless Pollinations FLUX).
+       Used when /api/nova-image is not deployed or fails. */
+    directUrl(payload, seed) {
+      const px = FORMAT_PIXELS[payload.format] || FORMAT_PIXELS.square;
+      let prompt = String(payload.prompt || "");
+      if (payload.negative) {
+        const neg = String(payload.negative).split(",").slice(0, 6).map(s => s.trim()).filter(Boolean).join(", ");
+        if (neg) prompt += ". Avoid: " + neg;
+      }
+      const qs = new URLSearchParams({
+        width: String(px.w), height: String(px.h), seed: String(seed),
+        model: "flux", nologo: "true", enhance: "false", safe: "true"
+      });
+      return "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt.slice(0, 1800)) + "?" + qs.toString();
+    },
+    async directGenerate(payload, onStatus) {
+      const seed = parseInt(payload.seed, 10) || randomSeed();
+      const px = FORMAT_PIXELS[payload.format] || FORMAT_PIXELS.square;
+      const url = this.directUrl(payload, seed);
+      if (onStatus) onStatus("rendering");
+      // Preload in the browser so we only report success for a real image.
+      const ok = await new Promise((resolve) => {
+        const im = new Image();
+        const timer = setTimeout(() => resolve(false), 90000);
+        im.onload = () => { clearTimeout(timer); resolve(true); };
+        im.onerror = () => { clearTimeout(timer); resolve(false); };
+        im.src = url;
+      });
+      if (!ok) return { ok: false, reason: "provider_error" };
+      return { ok: true, images: [{ url, seed, width: px.w, height: px.h }], provider: "pollinations", model: "flux", width: px.w, height: px.h, seed, direct: true };
+    },
+    /* Generate through the server (provider chain + fallback); if the
+       server route itself is unreachable or fails, fall back to the
+       direct client-side path. Returns
+       { ok, images:[{url,seed,width,height}], provider, model, … }
+       or { ok:false, reason }. onStatus receives pipeline stages. */
+    async generate(payload, onStatus) {
+      const status = (s) => { try { if (onStatus) onStatus(s); } catch (e) {} };
+      status("preparing");
+      if (!payload.seed) payload.seed = randomSeed();
+      const started = now();
+      if (!this.directOnly) {
+        try {
+          status("requesting");
+          const r = await fetch("/api/nova-image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const d = await r.json();
+          if (d && d.ok && d.images && d.images.length) {
+            status("done");
+            d.elapsedMs = d.elapsedMs || (now() - started);
+            return d;
+          }
+          // hard server-declared no-backend or provider failure →
+          // try the direct client path before giving up
+          const direct = await this.directGenerate(payload, status);
+          if (direct.ok) { status("done"); direct.elapsedMs = now() - started; return direct; }
+          status("error");
+          return d && d.reason ? d : { ok: false, reason: "generation_failed" };
+        } catch (e) { /* network / route missing → direct path below */ }
+      }
       try {
-        const r = await fetch("/api/nova-image", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-        const d = await r.json();
-        return d && d.ok ? d : { ok: false, reason: (d && d.error) || "generation_failed" };
-      } catch (e) { return { ok: false, reason: "network_error" }; }
+        status("requesting");
+        const direct = await this.directGenerate(payload, status);
+        if (direct.ok) { status("done"); direct.elapsedMs = now() - started; return direct; }
+        status("error");
+        return direct;
+      } catch (e) { status("error"); return { ok: false, reason: "network_error" }; }
     }
+  };
+
+  /* ═══════════════════════════════════════════════════════════════
+     10b · GENERATIONS — image result history (local, capped)
+     Stores metadata + a reproducible seed/URL, never huge data URLs.
+     ═══════════════════════════════════════════════════════════════ */
+  const GEN_KEY = "dentoverse_nova_img_generations_v1";
+  const Generations = {
+    list() { return lsGet(GEN_KEY, []); },
+    add(entry) {
+      const list = lsGet(GEN_KEY, []);
+      const rec = {
+        id: uid(), t: now(),
+        prompt: String(entry.prompt || "").slice(0, 1200),
+        negative: String(entry.negative || "").slice(0, 600),
+        preset: entry.preset || "", format: entry.format || "square",
+        provider: entry.provider || "", model: entry.model || "",
+        seed: entry.seed || null,
+        width: entry.width || null, height: entry.height || null,
+        // keep only compact, refetchable URLs (not multi-MB data URLs)
+        url: (entry.url && entry.url.length < 2048) ? entry.url : (entry.sourceUrl || null)
+      };
+      list.unshift(rec);
+      lsSet(GEN_KEY, list.slice(0, 30));
+      return rec;
+    },
+    remove(id) { lsSet(GEN_KEY, lsGet(GEN_KEY, []).filter(x => x.id !== id)); },
+    clear() { lsSet(GEN_KEY, []); }
   };
 
   /* ═══════════════════════════════════════════════════════════════
      Public API
      ═══════════════════════════════════════════════════════════════ */
   window.NovaImage = {
-    version: "1.0-phase3",
+    version: "2.0-phase3",
     detectLang,
     isImageRequest,
     Understand: { parse: understand, missingDetails, personalize },
@@ -640,6 +745,7 @@
     Refine: refine,
     Memory,
     Library: { items: LIBRARY, apply: libraryApply },
-    Backend
+    Backend,
+    Generations
   };
 })();
