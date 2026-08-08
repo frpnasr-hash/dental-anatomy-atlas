@@ -201,6 +201,194 @@
   }
   function escapeHtml(s) { return String(s || "").replace(/[<>&]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c])); }
 
+  /* ═══════════════════════════════════════════════════════════════
+     IMAGE STUDIO BRIDGE (Phase 3, additive)
+     ───────────────────────────────────────────────────────────────
+     Connects the premium NovaImage engine + NovaImageStudio overlay
+     to the existing Nova chat WITHOUT modifying assistant.js:
+
+       • Adds a 🎨 launcher button in the assistant header.
+       • Keeps an "Image Studio" quick-chip present (survives the
+         assistant's chip re-renders via a light MutationObserver).
+       • Detects image-design requests typed in chat and, instead of
+         answering as text, invites the user into the Studio (seeded
+         with their request) — a capture-phase submit hook that never
+         breaks the normal chat path for non-image messages.
+       • Bilingual (EN / MSA / Egyptian) copy that follows the user.
+     ═══════════════════════════════════════════════════════════════ */
+  const IMG = {
+    wired: false,
+    lang: "en",
+    lastText: ""
+  };
+
+  function imgReady() { return !!(window.NovaImage && window.NovaImageStudio); }
+
+  function imgT(key) {
+    const L = {
+      chip:        { en: "🎨 Image Studio",              ar: "🎨 استوديو الصور" },
+      launcher:    { en: "Open Image Design Studio",      ar: "افتح استوديو تصميم الصور" },
+      inviteText:  {
+        en: "I can design that for you 🎨 — I’ll turn it into a production-ready image prompt with style, composition, lighting and format controls. Opening the Image Studio…",
+        ar: "أقدر أصممهالك 🎨 — هحوّلها لبرومبت احترافي جاهز للتوليد مع تحكم في الستايل والتكوين والإضاءة والمقاس. بفتحلك استوديو الصور…"
+      },
+      openBtn:     { en: "🎨 Open Image Studio",          ar: "🎨 افتح استوديو الصور" },
+      craftBtn:    { en: "✨ Craft prompt only",           ar: "✨ جهّز البرومبت بس" },
+      hintText:    {
+        en: "Tip: you can ask me to “design a poster”, “create a dental diagram”, “make a lecture banner”, and I’ll open the Image Studio.",
+        ar: "معلومة: تقدر تقولي «صمم بوستر» أو «اعمل مخطط أسنان» أو «اعملي بانر محاضرة» وهفتحلك استوديو الصور."
+      }
+    };
+    const row = L[key] || {};
+    return row[IMG.lang] || row.en || "";
+  }
+
+  function detectImgLang(text) {
+    try {
+      if (window.NovaImage && window.NovaImage.detectLang) {
+        const d = window.NovaImage.detectLang(text || "");
+        return d && d.lang === "ar" ? "ar" : "en";
+      }
+    } catch (e) {}
+    return /[\u0600-\u06FF]/.test(String(text || "")) ? "ar" : "en";
+  }
+
+  /* Open the studio seeded with a request (or blank). */
+  function openStudio(seedText) {
+    if (!window.NovaImageStudio) return false;
+    try {
+      if (seedText && String(seedText).trim()) window.NovaImageStudio.openWith(String(seedText).trim());
+      else window.NovaImageStudio.open();
+      return true;
+    } catch (e) { return false; }
+  }
+
+  /* Inject a header launcher button into the assistant panel. */
+  function ensureHeaderLauncher() {
+    const actions = document.querySelector(".nova-panel .nova-head-actions");
+    if (!actions || actions.querySelector("[data-nova-img-launch]")) return;
+    const btn = document.createElement("button");
+    btn.className = "nova-icon-btn";
+    btn.type = "button";
+    btn.setAttribute("data-nova-img-launch", "1");
+    btn.setAttribute("aria-label", "Image Design Studio");
+    btn.title = imgT("launcher");
+    btn.textContent = "🎨";
+    // place it before the language toggle for prominence
+    const first = actions.firstElementChild;
+    if (first) actions.insertBefore(btn, first);
+    else actions.appendChild(btn);
+    btn.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); openStudio(); });
+  }
+
+  /* Keep an "Image Studio" chip present in the quick bar. */
+  function ensureStudioChip() {
+    const bar = document.getElementById("nova-quick");
+    if (!bar) return;
+    if (bar.querySelector("[data-nova-img-chip]")) return;
+    const chip = document.createElement("button");
+    chip.className = "nova-chip nova-chip-img";
+    chip.type = "button";
+    chip.setAttribute("data-nova-img-chip", "1");
+    chip.textContent = imgT("chip");
+    chip.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); openStudio(); });
+    bar.appendChild(chip);
+  }
+
+  /* Post a small bot invitation bubble into the live thread. */
+  function postImageInvite(seedText) {
+    const thread = document.getElementById("nova-thread");
+    if (!thread) return;
+    const rtl = IMG.lang === "ar";
+    const row = document.createElement("div");
+    row.className = "nova-msg bot" + (rtl ? " rtl" : "");
+    const bubble = document.createElement("div");
+    bubble.className = "nova-bubble";
+    bubble.innerHTML =
+      `<div class="nova-reply"><div class="nova-reply-text"${rtl ? ' dir="rtl"' : ""}>` +
+      escapeHtml(imgT("inviteText")) +
+      `</div><div class="nova-img-invite-actions">` +
+      `<button class="nova-chip nova-chip-img" data-a="open">${escapeHtml(imgT("openBtn"))}</button>` +
+      `</div></div>`;
+    row.appendChild(bubble);
+    thread.appendChild(row);
+    const openBtn = bubble.querySelector('[data-a="open"]');
+    if (openBtn) openBtn.addEventListener("click", () => openStudio(seedText));
+    try { thread.scrollTop = thread.scrollHeight; } catch (e) {}
+  }
+
+  /* Echo the user's message into the thread (mirrors assistant styling). */
+  function echoUserMessage(text) {
+    const thread = document.getElementById("nova-thread");
+    if (!thread) return;
+    const rtl = detectImgLang(text) === "ar";
+    const row = document.createElement("div");
+    row.className = "nova-msg user" + (rtl ? " rtl" : "");
+    const bubble = document.createElement("div");
+    bubble.className = "nova-bubble";
+    bubble.textContent = text;
+    row.appendChild(bubble);
+    thread.appendChild(row);
+    try { thread.scrollTop = thread.scrollHeight; } catch (e) {}
+  }
+
+  /* Capture-phase submit hook: intercept image requests only. */
+  function wireFormInterceptor() {
+    const form = document.getElementById("nova-form");
+    const inputEl = document.getElementById("nova-q");
+    if (!form || !inputEl || form.__novaImgHooked) return;
+    form.__novaImgHooked = true;
+    form.addEventListener("submit", (e) => {
+      if (!imgReady()) return;                       // engine missing → normal chat
+      const text = (inputEl.value || "").trim();
+      if (!text) return;
+      let isImg = false;
+      try { isImg = window.NovaImage.isImageRequest(text); } catch (err) { isImg = false; }
+      if (!isImg) return;                            // not an image request → normal chat
+      // It's an image-design request → handle here, stop the built-in handler.
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      IMG.lang = detectImgLang(text);
+      inputEl.value = "";
+      echoUserMessage(text);
+      postImageInvite(text);
+      setTimeout(() => openStudio(text), 320);
+    }, true); // capture = runs before assistant.js's own submit listener
+  }
+
+  function escapeHtml(s) { return String(s == null ? "" : s).replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c])); }
+
+  /* Observe the panel so launcher + chip survive DOM re-renders. */
+  function observeAssistant() {
+    const tryWire = () => {
+      const panel = document.querySelector(".nova-panel");
+      if (!panel) return false;
+      ensureHeaderLauncher();
+      wireFormInterceptor();
+      ensureStudioChip();
+      return true;
+    };
+    if (tryWire()) IMG.wired = true;
+    // Panel may be (re)built lazily; keep watching the body + quick bar.
+    const mo = new MutationObserver(() => {
+      const bar = document.getElementById("nova-quick");
+      if (bar) ensureStudioChip();
+      ensureHeaderLauncher();
+      wireFormInterceptor();
+    });
+    try { mo.observe(document.body, { childList: true, subtree: true }); } catch (e) {}
+  }
+
+  function hookImageStudio() {
+    if (!window.NovaImageStudio) return;   // studio not loaded → skip silently
+    observeAssistant();
+    // Also react to language toggles inside the assistant.
+    document.addEventListener("click", (e) => {
+      const b = e.target && e.target.closest && e.target.closest('[data-nova="lang"]');
+      if (b) setTimeout(() => { ensureStudioChip(); ensureHeaderLauncher(); }, 60);
+    }, true);
+  }
+
   /* ───────── boot ───────── */
   function boot() {
     try { registerToolingContext(); } catch (e) {}
@@ -208,6 +396,7 @@
     try { hookAskAI(); } catch (e) {}
     try { hookUserTextCapture(); } catch (e) {}
     try { hookSignalsCapture(); } catch (e) {}
+    try { hookImageStudio(); } catch (e) {}
     Bridge.ready = true;
   }
 
@@ -220,6 +409,9 @@
     ready:   Bridge.ready,
     dispatchTool: (name, input, ctx) => (window.NovaTools && window.NovaTools.dispatch) ? window.NovaTools.dispatch(name, input, ctx) : null,
     renderToolComparison,
-    status: () => window.NovaCore ? window.NovaCore.Status : null
+    status: () => window.NovaCore ? window.NovaCore.Status : null,
+    /* Image Studio bridge helpers (Phase 3) */
+    openImageStudio: (seed) => openStudio(seed),
+    isImageRequest: (text) => { try { return !!(window.NovaImage && window.NovaImage.isImageRequest(text)); } catch (e) { return false; } }
   };
 })();

@@ -381,3 +381,36 @@
   .nis-actions .nis-btn { flex: 1 1 auto; text-align: center; }
   .nis-head-id h3 { font-size: .88rem; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   CHAT-SIDE INTEGRATION — Image Studio launcher chip + invite
+   (rendered inside the existing Nova assistant panel/thread)
+   ═══════════════════════════════════════════════════════════════ */
+.nova-chip.nova-chip-img {
+  background: linear-gradient(135deg, rgba(255, 107, 26, 0.20), rgba(0, 212, 255, 0.16));
+  border: 1px solid rgba(255, 107, 26, 0.45);
+  color: #ffe6d2;
+  font-weight: 600;
+}
+.nova-chip.nova-chip-img:hover {
+  background: linear-gradient(135deg, rgba(255, 107, 26, 0.34), rgba(0, 212, 255, 0.26));
+  border-color: rgba(255, 107, 26, 0.7);
+  box-shadow: 0 4px 18px rgba(255, 107, 26, 0.28);
+}
+.nova-img-invite-actions {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.nova-img-invite-actions .nova-chip-img {
+  cursor: pointer;
+  padding: 8px 14px;
+  border-radius: 12px;
+  font-size: .86rem;
+}
+/* header launcher gets a subtle warm accent on hover */
+.nova-head-actions [data-nova-img-launch]:hover {
+  color: var(--nis-orange, #ff6b1a);
+  transform: translateY(-1px);
+}
