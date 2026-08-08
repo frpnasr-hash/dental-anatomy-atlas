@@ -30,6 +30,7 @@
 
   if (typeof window === "undefined") return;
 
+  let ToolRegistry = null; // internal alias to the Tools map (declared to satisfy strict mode)
   const STAGE = { resources: [], sections: [], labels: {}, helpers: {} };
 
   function registerContext(ctx) {
@@ -253,6 +254,7 @@
   window.NovaTools = {
     version: "2.0-phase2",
     Tools,
+    registry: ToolRegistry,
     dispatch,
     registerContext,
     findResource,
