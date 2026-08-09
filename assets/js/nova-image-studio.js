@@ -568,6 +568,7 @@
     o.querySelector("#nis-prompt").textContent = v.prompt;
     o.querySelector("#nis-negative").textContent = v.negative;
     o.querySelector("#nis-notes").hidden = true;
+    const vn = o.querySelector("#nis-validate"); if (vn) vn.hidden = true;
     o.querySelector("#nis-result").hidden = true;
     updateGenerateBtn();
     out.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -797,10 +798,50 @@
 
   function generateImage() {
     const NI = $img(); const entry = currentPromptEntry(); if (!NI || !entry) return;
+
+    // ── ACCURACY GATE ──
+    // Validate the exact prompt against the request right before sending it
+    // to the backend. The Validator re-anchors a drifted subject, translates
+    // leftover Arabic, injects missing must-include elements, enforces exact
+    // in-image text and fixes style conflicts — so the image the backend
+    // renders faithfully matches what the user asked for.
+    let prompt = entry.prompt, negative = entry.negative;
+    try {
+      if (NI.Validator && S.spec) {
+        const v = NI.Validator.validate(S.spec, prompt, negative);
+        prompt = v.prompt; negative = v.negative;
+        renderValidationNote(v.issues);
+        // reflect repairs back into the visible editable prompt so the user
+        // sees exactly what will be generated
+        const o = S.el.overlay;
+        o.querySelector("#nis-prompt").textContent = prompt;
+        o.querySelector("#nis-negative").textContent = negative;
+        if (S.lastEntry) { S.lastEntry.prompt = prompt; S.lastEntry.negative = negative; }
+      }
+    } catch (e) { /* validation is best-effort; never block generation */ }
+
     runGeneration({
-      prompt: entry.prompt, negative: entry.negative,
+      prompt: prompt, negative: negative,
       format: entry.format, preset: entry.preset, count: 1
     });
+  }
+
+  /* Show what the accuracy check adjusted (only when it actually did work) */
+  function renderValidationNote(issues) {
+    const o = S.el.overlay; if (!o) return;
+    let box = o.querySelector("#nis-validate");
+    const fixes = (issues || []).filter(i => i.fixed);
+    const warns = (issues || []).filter(i => i.fixed === false);
+    if (!fixes.length && !warns.length) { if (box) box.hidden = true; return; }
+    if (!box) {
+      box = el("div", "nis-validate-note"); box.id = "nis-validate";
+      const notes = o.querySelector("#nis-notes");
+      notes.parentNode.insertBefore(box, notes);
+    }
+    box.className = "nis-validate-note" + (warns.length ? " warn" : "");
+    const items = fixes.concat(warns).slice(0, 5).map(i => `<li>${esc(i.note)}</li>`).join("");
+    box.innerHTML = `<strong>${warns.length ? "⚠️" : "✓"} ${t("qualityCheck")}</strong><ul>${items}</ul>`;
+    box.hidden = false;
   }
 
   /* ───────── side panel: history / templates / saved ───────── */
