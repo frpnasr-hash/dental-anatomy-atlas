@@ -118,3 +118,51 @@ The Studio works fully **without** a backend — it stays a premium prompt compo
 ```
 
 `POST /api/nova-image` with `{ prompt, negative, format, preset, count }` returns `{ ok:true, images:[{url}], provider }`, or a graceful `{ ok:false, reason }` when no provider is configured.
+
+---
+
+# Nova AI — Phase 5 · Deep Understanding + Learned Context (server-integrated)
+
+Phase 5 closes the loop between Nova's client-side intelligence and its serverless brain. The deep-understanding envelope and the user's personal learned material are now **actually consumed by the backend**, and the offline fallback benefits from learned material too. Everything is additive and backward compatible — no existing DentoVerse feature changes.
+
+## What Phase 5 adds
+
+- **Deep request understanding, server-side.** `nova-understand.js` already analysed every message into an *understanding envelope* (intent, depth, tone, output-format hints, must-include / must-exclude topics, hard constraints like word/sentence/page limits, key entities, ambiguity + a bilingual clarify question). `api/nova.js` now folds that envelope into the system prompt as an explicit **DEEP REQUEST UNDERSTANDING** directive block, so the model plans against the real request instead of a shallow keyword read.
+- **Depth-aware generation.** The backend tunes `max_tokens` / `temperature` to the understood depth (`deep`, `exam`, `brief`, `stepwise`) and hard-caps output to respect explicit word/sentence budgets.
+- **Learned material as grounded context.** User-provided, locally-indexed material (chat logs, notes, prompt examples via `NovaLearn`) is passed to the backend and injected as a trusted **USER-PROVIDED LEARNED MATERIAL** section — so answers match the user's own style, terminology and examples. All input is sanitized and length-capped; the client never sends code, only text.
+- **Offline learned answers.** When no AI key is configured, `respondFromLearned()` in `assistant.js` searches the personal `NovaLearn` index and surfaces the most relevant snippets as a grounded bilingual reply, styled to match the DentoVerse glass UI.
+- **Language back-fill.** When the client omits an explicit `lang` / `dialect` / `tool` hint, the backend derives them from the understanding envelope (English / MSA / Egyptian Arabic / mixed).
+
+## New / expanded LLM providers
+
+In addition to OpenAI, OpenRouter, Groq, DeepSeek and Gemini, Phase 5 adds:
+
+| Provider | Environment variable | Optional model variable | Notes |
+|---|---|---|---|
+| Mistral AI | `MISTRAL_API_KEY` | `MISTRAL_MODEL` (default `mistral-large-latest`) | OpenAI-compatible La Plateforme |
+| Alibaba Qwen | `QWEN_API_KEY` / `DASHSCOPE_API_KEY` | `QWEN_MODEL` (default `qwen2.5-72b-instruct`), `QWEN_BASE_URL` | DashScope OpenAI-compatible endpoint |
+| Meta Llama 3.1 | *(via Groq or OpenRouter)* | `GROQ_MODEL=llama-3.1-70b-versatile` or `OPENROUTER_MODEL=meta-llama/llama-3.1-70b-instruct` | no dedicated key needed |
+
+## Health check (Phase 5)
+
+`GET /api/nova` now reports version `4.0-phase5` and a capabilities map:
+
+```json
+{
+  "ok": true,
+  "ai": true,
+  "provider": "openai",
+  "name": "Nova",
+  "version": "4.0-phase5",
+  "capabilities": {
+    "deepUnderstanding": true,
+    "learnedContext": true,
+    "multilingual": true,
+    "uploadedPdf": true,
+    "approvedWebSearch": false,
+    "depthAwareGeneration": true
+  }
+}
+```
+
+`POST /api/nova` responses additionally include `usedUnderstanding`, `usedLearned`, `understoodIntent` and `understoodDepth` so the frontend can observe how the request was interpreted.
