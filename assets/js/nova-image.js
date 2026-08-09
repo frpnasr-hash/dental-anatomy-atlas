@@ -266,6 +266,73 @@
     { rx: /inspir|motivat|ملهم|تحفيزي/i, mood: "inspiring and uplifting" }
   ];
 
+  /* ── Arabic → English subject translation (LOCAL fallback) ──
+     Image models understand English far better. When the server
+     planner (LLM) is unavailable, this glossary translates the most
+     common dental / academic / design vocabulary so an Arabic request
+     still produces an English, on-subject prompt instead of feeding
+     raw Arabic text into the model (a major mismatch source). */
+  const AR_EN_GLOSSARY = [
+    // dental / medical
+    [/طبيب\s*(ال)?أسنان|طبيب\s*(ال)?اسنان|دكتور\s*أسنان|دكتور\s*اسنان/g, "dentist"],
+    [/عيادة\s*(ال)?أسنان|عيادة\s*(ال)?اسنان/g, "dental clinic"],
+    [/تشريح\s*(ال)?أسنان|تشريح\s*(ال)?اسنان/g, "dental anatomy"],
+    [/تقويم\s*(ال)?أسنان|تقويم\s*(ال)?اسنان/g, "orthodontic braces"],
+    [/زراعة\s*(ال)?أسنان|زراعة\s*(ال)?اسنان/g, "dental implant"],
+    [/تبييض\s*(ال)?أسنان|تبييض\s*(ال)?اسنان/g, "teeth whitening"],
+    [/الأسنان|الاسنان|أسنان|اسنان/g, "teeth"],
+    [/الضرس|ضرس/g, "molar tooth"], [/الناب|ناب/g, "canine tooth"],
+    [/القواطع|قواطع/g, "incisor teeth"], [/ضواحك/g, "premolar teeth"],
+    [/المينا|مينا/g, "enamel"], [/العاج|عاج/g, "dentin"],
+    [/اللب|لب السن|لب الضرس/g, "dental pulp"],
+    [/الجذور|جذور|الجذر|جذر/g, "tooth root"],
+    [/اللثة|لثة/g, "gums"], [/الفك|فك/g, "jaw"],
+    [/تسوس/g, "dental caries"], [/حشو/g, "dental filling"],
+    [/خلع/g, "tooth extraction"], [/علاج الجذور|علاج العصب/g, "root canal treatment"],
+    [/ابتسامة|ابتسامه/g, "smile"], [/فرشاة\s*(ال)?أسنان|فرشاة\s*(ال)?اسنان/g, "toothbrush"],
+    [/معجون\s*(ال)?أسنان|معجون\s*(ال)?اسنان/g, "toothpaste"],
+    [/التشريح|تشريح/g, "anatomy"], [/الطبي|طبي|طبية|طبيه/g, "medical"],
+    [/المريض|مريض/g, "patient"], [/الجمجمة|جمجمة/g, "skull"],
+    // academic / design
+    [/المحاضرة|محاضرة|محاضره/g, "lecture"], [/الامتحان|امتحان/g, "exam"],
+    [/المذاكرة|مذاكرة|مذاكره|مراجعة|مراجعه/g, "studying"],
+    [/الكورس|كورس|الدورة|دورة/g, "course"], [/الطلاب|طلاب|طلبة|طلبه/g, "students"],
+    [/الجامعة|جامعة|جامعه|الكلية|كلية|كليه/g, "university"],
+    [/إعلان|اعلان/g, "announcement"], [/الغلاف|غلاف/g, "cover"],
+    [/العنوان|عنوان/g, "title"], [/الخلفية|خلفية|خلفيه/g, "background"],
+    [/مخطط|رسم بياني/g, "diagram"], [/رسمة|رسمه|رسم/g, "illustration"],
+    [/بوستر|ملصق/g, "poster"], [/بانر/g, "banner"],
+    [/انفوجرافيك|إنفوجرافيك/g, "infographic"], [/شعار|لوجو/g, "logo"],
+    [/صورة|صوره/g, "image"], [/تصميم/g, "design"],
+    // common subjects & qualifiers
+    [/مستقبلية|مستقبليه|مستقبلي|مستقبلى/g, "futuristic"],
+    [/واقعية|واقعيه|واقعي|واقعى/g, "realistic"],
+    [/سينمائية|سينمائيه|سينمائي|سينمائى/g, "cinematic"],
+    [/احترافية|احترافيه|احترافي|احترافى/g, "professional"],
+    [/تعليمية|تعليميه|تعليمي|تعليمى/g, "educational"],
+    [/جميلة|جميله|جميل|حلوة|حلوه|حلو/g, "beautiful"],
+    [/بسيطة|بسيطه|بسيط/g, "simple"], [/فاخرة|فاخره|فاخر|فخمة|فخمه|فخم/g, "luxurious"],
+    [/حديثة|حديثه|حديث|عصرية|عصريه|عصري/g, "modern"],
+    [/القطة|قطة|قطه|قط/g, "cat"], [/الكلب|كلب/g, "dog"],
+    [/المدينة|مدينة|مدينه/g, "city"], [/الطبيعة|طبيعة|طبيعه/g, "nature"],
+    [/البحر|بحر/g, "sea"], [/السماء|سماء/g, "sky"], [/الغروب|غروب/g, "sunset"],
+    [/الفضاء|فضاء/g, "outer space"], [/روبوت/g, "robot"],
+    [/الكتاب|كتاب/g, "book"], [/الكتب|كتب/g, "books"],
+    [/المستشفى|مستشفى/g, "hospital"], [/المعمل|معمل/g, "laboratory"],
+    // connectors
+    [/\bعن\b|\bحول\b/g, "about"], [/\bمع\b/g, "with"],
+    [/\bفي\b|\bفى\b/g, "in"], [/\bبدون\b|\bمن غير\b/g, "without"],
+    [/\bو\b/g, "and"], [/\bعلى\b|\bعلي\b/g, "on"]
+  ];
+  function translateArabicSubject(text) {
+    let out = " " + String(text || "") + " ";
+    AR_EN_GLOSSARY.forEach(([rx, en]) => { out = out.replace(rx, " " + en + " "); });
+    // strip leftover Arabic (untranslatable tokens would only confuse the model)
+    const hadArabic = AR_RX.test(out);
+    out = out.replace(/[\u0600-\u06FF\u0750-\u077F]+/g, " ").replace(/\s{2,}/g, " ").trim();
+    return { text: out, complete: !hadArabic || out.split(/\s+/).filter(Boolean).length >= 2 };
+  }
+
   const SUBJECT_STRIP_RX = /^(please\s+)?(create|design|generate|make|draw|render|illustrate|produce|build)\s+(a|an|the)?\s*(realistic|futuristic|cinematic|minimal|academic|medical|clean|beautiful|professional|premium|modern)?\s*(image|picture|photo|visual|banner|poster|logo|cover|thumbnail|illustration|diagram|infographic|graphic|wallpaper|artwork|icon|card|flyer)?\s*(of|for|about|showing|that shows)?\s*/i;
   const SUBJECT_STRIP_AR = /^(لو سمحت\s+)?(اعمل|إعمل|صمم|صمّم|انشئ|أنشئ|ارسم|أرسم|ولّد|ولد|جهز|جهّز|عايز|عاوز|محتاج|اريد|أريد)\s*(لي|لى|ليا)?\s*(صورة|صوره|بوستر|بانر|تصميم|غلاف|شعار|رسمة|رسم|انفوجرافيك|إنفوجرافيك|مخطط|خلفية)?\s*(عن|ل|لـ|بتاع|توضح|تشرح|فيها|فيه)?\s*/;
 
@@ -299,13 +366,23 @@
     let subject = raw.replace(SUBJECT_STRIP_RX, "").replace(SUBJECT_STRIP_AR, "").trim();
     if (!subject) subject = raw;
 
+    // Arabic requests → translate the subject into English locally so
+    // the prompt anchor is model-readable even without the LLM planner.
+    let subjectEn = subject, translated = false;
+    if (det.lang === "ar") {
+      const tr = translateArabicSubject(subject);
+      if (tr.text) { subjectEn = tr.text; translated = true; }
+    }
+
     // typography needed?
     const wantsText = /title|headline|text|typography|write|words|عنوان|نص|كلام|اكتب|أكتب/i.test(raw);
 
     const spec = {
       id: uid(),
       subjectRaw: raw,
-      subject,
+      subject: subjectEn,          // English prompt anchor (translated when Arabic)
+      subjectNative: subject,      // original-language subject (for display)
+      translated,
       lang: det.lang,
       dialect: det.dialect,
       preset: preset || "realistic",
@@ -314,6 +391,10 @@
       quality: "high",
       format: "",                // filled by recommendFormat
       wantsText,
+      mustInclude: [],           // concrete elements that MUST appear (planner)
+      mustExclude: [],           // things to avoid (planner)
+      textInImage: "",           // exact text to render inside the image
+      plan: null,                // structured LLM plan when available
       palette: extractPalette(raw),
       createdAt: now()
     };
@@ -368,9 +449,29 @@
     const q = QUALITY[spec.quality] || QUALITY.high;
     const fmt = FORMATS[spec.format] || FORMATS.square;
 
+    /* ── plan-anchored path: when the LLM planner produced a faithful
+       production prompt, USE IT as the base (it is the most accurate
+       representation of the user's request) and only append the
+       technical guidance the plan doesn't carry. ── */
+    if (spec.plan && spec.plan.prompt && !opts.ignorePlan) {
+      const planParts = [spec.plan.prompt];
+      if (spec.mustInclude && spec.mustInclude.length) planParts.push("the image must clearly include: " + spec.mustInclude.join(", "));
+      if (spec.textInImage) planParts.push(`render the exact text "${spec.textInImage}" clearly and legibly, no gibberish text`);
+      planParts.push(q.txt);
+      planParts.push(`${fmt.ratio} aspect ratio`);
+      const planPrompt = dedupe(planParts.join(", ").split(", ")).join(", ");
+      const planNeg = dedupe(
+        [spec.plan.negative_prompt || "", (spec.mustExclude || []).join(", "), p.negative, BASE_NEGATIVE]
+          .join(", ").split(",").map(s => s.trim())
+      ).join(", ");
+      return { prompt: planPrompt, negative: planNeg, ratio: fmt.ratio, format: fmt.id, preset: p.id, spec, planned: true };
+    }
+
     const parts = [];
     // subject first — models weight early tokens most
     parts.push(spec.subject);
+    if (spec.mustInclude && spec.mustInclude.length) parts.push("the image must clearly include: " + spec.mustInclude.join(", "));
+    if (spec.textInImage) parts.push(`render the exact text "${spec.textInImage}" clearly and legibly`);
     if (spec.purpose) parts.push(`designed for ${spec.purpose.replace(/-/g, " ")}${spec.audience && spec.audience !== "general" ? " aimed at " + spec.audience : ""}`);
     parts.push(p.style);
     parts.push(comp.txt);
@@ -385,7 +486,9 @@
     parts.push(`${fmt.ratio} aspect ratio, ${fmt.label.toLowerCase()} format`);
 
     const prompt = dedupe(parts).join(", ");
-    const negative = dedupe([BASE_NEGATIVE, p.negative].join(", ").split(",").map(s => s.trim())).join(", ");
+    const negative = dedupe(
+      [BASE_NEGATIVE, p.negative, (spec.mustExclude || []).join(", ")].join(", ").split(",").map(s => s.trim())
+    ).join(", ");
     return { prompt, negative, ratio: fmt.ratio, format: fmt.id, preset: p.id, spec };
   }
   function dedupe(arr) {
@@ -470,7 +573,10 @@
       notes.push("Blended your note into the prompt.");
     }
     s.id = uid(); s.parentId = spec.id; s.refinedAt = now();
-    const result = compose(s);
+    // A local refinement that changes style/composition/quality must be
+    // visible in the prompt — a stale LLM plan prompt would mask it, so
+    // rebuild from the (plan-updated) subject + new settings instead.
+    const result = compose(s, { ignorePlan: matched && !!s.plan });
     if (s._extra && s._extra.length) result.prompt += ", " + dedupe(s._extra).join(", ");
     return { spec: s, result, notes };
   }
@@ -729,13 +835,179 @@
   };
 
   /* ═══════════════════════════════════════════════════════════════
+     11 · PLANNER — LLM-powered request understanding client
+     ───────────────────────────────────────────────────────────────
+     Calls POST /api/nova-image {action:"plan"} which (when a chat-LLM
+     key is configured on the server) deeply understands the request in
+     EN / MSA / Egyptian Arabic and returns a structured, faithful
+     generation plan. The plan is merged into the spec so composed
+     prompts stay tightly anchored to what the user actually asked —
+     the core fix for "the image doesn't match the request".
+     Degrades silently to the local heuristic path when no LLM exists.
+     ═══════════════════════════════════════════════════════════════ */
+  const PLAN_STYLE_IDS = new Set(Object.keys(PRESETS));
+  const PLAN_FORMAT_IDS = new Set(Object.keys(FORMATS));
+
+  const Planner = {
+    available: null, // unknown until first call
+    async request(mode, payload) {
+      try {
+        const r = await fetch("/api/nova-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(Object.assign({ action: "plan", mode }, payload))
+        });
+        if (!r.ok) return null;
+        const d = await r.json();
+        if (d && d.ok && d.plan && d.plan.prompt) { this.available = true; return d.plan; }
+        if (d && d.reason === "no_llm") this.available = false;
+        return null;
+      } catch (e) { return null; }
+    },
+    /* plan a fresh request; returns plan or null */
+    async plan(requestText, context) {
+      if (this.available === false) return null;
+      return this.request("plan", { request: requestText, context: context || "" });
+    },
+    /* refine an existing prompt with an instruction, staying faithful */
+    async refine(requestText, currentPrompt, instruction) {
+      if (this.available === false) return null;
+      return this.request("refine", { request: requestText, currentPrompt, instruction });
+    },
+    /* diagnose a mismatch complaint and return a corrected plan */
+    async diagnose(requestText, currentPrompt, complaint) {
+      if (this.available === false) return null;
+      return this.request("diagnose", { request: requestText, currentPrompt, instruction: complaint });
+    },
+    /* merge a returned plan into a spec (never break existing fields) */
+    applyToSpec(spec, plan) {
+      if (!spec || !plan) return spec;
+      spec.plan = plan;
+      if (plan.subject_en) { spec.subject = plan.subject_en; spec.translated = spec.lang === "ar"; }
+      if (plan.style && PLAN_STYLE_IDS.has(plan.style)) spec.preset = plan.style;
+      if (plan.format && PLAN_FORMAT_IDS.has(plan.format)) spec.format = plan.format;
+      if (plan.mood) spec.mood = plan.mood;
+      if (Array.isArray(plan.palette) && plan.palette.length) spec.palette = plan.palette.slice(0, 8);
+      spec.mustInclude = Array.isArray(plan.must_include) ? plan.must_include.slice(0, 10) : (spec.mustInclude || []);
+      spec.mustExclude = Array.isArray(plan.must_exclude) ? plan.must_exclude.slice(0, 12) : (spec.mustExclude || []);
+      spec.textInImage = plan.text_in_image || spec.textInImage || "";
+      spec.clarify = plan.clarify || "";
+      spec.confidence = typeof plan.confidence === "number" ? plan.confidence : 0.75;
+      if (plan.audience && plan.audience !== "general") spec.audience = plan.audience;
+      if (plan.goal && !spec.purpose) spec.purpose = plan.goal;
+      return spec;
+    },
+    /* compact context from successful history for style continuity */
+    memoryContext() {
+      try {
+        const good = Memory.history(6).filter(h => h.prompt);
+        if (!good.length) return "";
+        const presets = {};
+        good.forEach(h => { if (h.preset) presets[h.preset] = (presets[h.preset] || 0) + 1; });
+        const fav = Object.entries(presets).sort((a, b) => b[1] - a[1])[0];
+        return fav ? `User frequently prefers the "${fav[0]}" style.` : "";
+      } catch (e) { return ""; }
+    }
+  };
+
+  /* ═══════════════════════════════════════════════════════════════
+     12 · VALIDATOR — pre-generation prompt quality control
+     ───────────────────────────────────────────────────────────────
+     Checks the final prompt AGAINST the original request before it is
+     sent to the image backend, and auto-repairs common failure modes:
+       • subject anchor missing from prompt   → re-anchor subject first
+       • leftover Arabic text in the prompt   → warn (models misread it)
+       • must-include elements missing        → append them explicitly
+       • requested text not instructed        → add exact-text directive
+       • prompt too short / too vague         → enrich from spec
+       • conflicting styles (e.g. minimal + ornate) → drop the conflict
+     Returns { ok, prompt, negative, issues:[{code,fixed,note}] }.
+     ═══════════════════════════════════════════════════════════════ */
+  const Validator = {
+    validate(spec, prompt, negative) {
+      const issues = [];
+      let p = String(prompt || "").trim();
+      let n = String(negative || "").trim();
+      if (!spec) return { ok: true, prompt: p, negative: n, issues };
+
+      // 1 · subject anchor must be present near the start
+      const subjectKey = String(spec.subject || "").toLowerCase().split(/\s+/).filter(w => w.length > 3).slice(0, 4);
+      if (subjectKey.length) {
+        const head = p.toLowerCase().slice(0, Math.max(160, p.length / 3));
+        const hits = subjectKey.filter(w => head.includes(w)).length;
+        if (hits === 0 && !p.toLowerCase().includes(String(spec.subject || "").toLowerCase().slice(0, 24))) {
+          p = spec.subject + ", " + p;
+          issues.push({ code: "subject_reanchored", fixed: true, note: "Subject was re-anchored at the start of the prompt." });
+        }
+      }
+
+      // 2 · leftover Arabic characters confuse diffusion models
+      if (/[\u0600-\u06FF]/.test(p)) {
+        const tr = translateArabicSubject(p);
+        if (tr.text && tr.text.length > 10) {
+          p = tr.text;
+          issues.push({ code: "arabic_translated", fixed: true, note: "Arabic words were translated to English for the image model." });
+        } else {
+          issues.push({ code: "arabic_leftover", fixed: false, note: "The prompt still contains Arabic — image models understand English best." });
+        }
+      }
+
+      // 3 · every must-include element should be present
+      (spec.mustInclude || []).forEach(el => {
+        const key = String(el).toLowerCase().split(/\s+/).filter(w => w.length > 3)[0];
+        if (key && !p.toLowerCase().includes(key)) {
+          p += ", clearly showing " + el;
+          issues.push({ code: "element_added", fixed: true, note: `Added required element: ${el}` });
+        }
+      });
+
+      // 4 · exact in-image text must be an explicit directive
+      if (spec.textInImage && !p.includes(spec.textInImage)) {
+        p += `, render the exact text "${spec.textInImage}" clearly and legibly`;
+        if (!/gibberish/i.test(n)) n = (n ? n + ", " : "") + "gibberish text, misspelled words";
+        issues.push({ code: "text_directive_added", fixed: true, note: "Added the exact in-image text directive." });
+      }
+
+      // 5 · too-short prompts under-constrain the model → drift
+      if (p.split(/\s+/).length < 7) {
+        const q = QUALITY[spec.quality] || QUALITY.high;
+        const pr = PRESETS[spec.preset] || PRESETS.realistic;
+        p += ", " + pr.style.split(",")[0] + ", " + q.txt.split(",").slice(0, 2).join(",");
+        issues.push({ code: "prompt_enriched", fixed: true, note: "Prompt was too short — added style and quality guidance." });
+      }
+
+      // 6 · style conflicts: minimal must not carry ornate vocabulary
+      if (spec.preset === "minimal" && /ornate|intricate|highly decorated|baroque|cluttered/i.test(p)) {
+        p = p.replace(/,?\s*(ornate|intricate|highly decorated|baroque|cluttered)[^,]*/gi, "");
+        issues.push({ code: "style_conflict_fixed", fixed: true, note: "Removed decoration terms that conflict with the minimal style." });
+      }
+      // realism requested → forbid illustration drift
+      if (spec.preset === "realistic" && !/photo/i.test(p)) {
+        p += ", photorealistic";
+        issues.push({ code: "realism_reinforced", fixed: true, note: "Reinforced photorealism as requested." });
+      }
+      // exclusions must live in the negative prompt too
+      (spec.mustExclude || []).forEach(x => {
+        const key = String(x).toLowerCase().slice(0, 24);
+        if (key && !n.toLowerCase().includes(key)) n = (n ? n + ", " : "") + x;
+      });
+
+      p = dedupe(p.split(", ")).join(", ");
+      n = dedupe(n.split(",").map(s => s.trim())).join(", ");
+      return { ok: issues.every(i => i.fixed !== false), prompt: p, negative: n, issues };
+    }
+  };
+
+  /* ═══════════════════════════════════════════════════════════════
      Public API
      ═══════════════════════════════════════════════════════════════ */
   window.NovaImage = {
-    version: "2.0-phase3",
+    version: "3.0-accuracy",
     detectLang,
     isImageRequest,
-    Understand: { parse: understand, missingDetails, personalize },
+    Understand: { parse: understand, missingDetails, personalize, translateArabicSubject },
+    Planner,
+    Validator,
     Presets: PRESETS,
     Formats: { list: FORMATS, recommend: recommendFormat },
     Compositions: COMPOSITIONS,
