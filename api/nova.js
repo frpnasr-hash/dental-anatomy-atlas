@@ -31,7 +31,14 @@
        OPENROUTER_API_KEY      + optional OPENROUTER_MODEL
        GROQ_API_KEY            + optional GROQ_MODEL      (default llama-3.3-70b-versatile)
        DEEPSEEK_API_KEY        + optional DEEPSEEK_MODEL  (default deepseek-chat)
+       MISTRAL_API_KEY         + optional MISTRAL_MODEL   (default mistral-large-latest)
+       QWEN_API_KEY / DASHSCOPE_API_KEY + optional QWEN_MODEL (default qwen2.5-72b-instruct)
+                               + optional QWEN_BASE_URL   (default intl DashScope)
        GEMINI_API_KEY          + optional GEMINI_MODEL    (default gemini-1.5-flash)
+
+     NOTE — Llama 3.1 (Meta) and Qwen2.5 are also reachable through the
+       existing GROQ_API_KEY / OPENROUTER_API_KEY providers by setting
+       GROQ_MODEL / OPENROUTER_MODEL to the desired model id.
      Generic override:
        NOVA_LLM_BASE_URL       (OpenAI-compatible /chat/completions base)
        NOVA_LLM_API_KEY
@@ -192,6 +199,16 @@ function resolveProvider() {
   }
   if (E.DEEPSEEK_API_KEY) {
     return { kind: "openai", base: "https://api.deepseek.com", key: E.DEEPSEEK_API_KEY, model: E.DEEPSEEK_MODEL || "deepseek-chat", name: "deepseek" };
+  }
+  if (E.MISTRAL_API_KEY) {
+    // Mistral La Plateforme — OpenAI-compatible /chat/completions.
+    // https://docs.mistral.ai/models — e.g. mistral-large-latest, mistral-small-latest.
+    return { kind: "openai", base: "https://api.mistral.ai/v1", key: E.MISTRAL_API_KEY, model: E.MISTRAL_MODEL || "mistral-large-latest", name: "mistral" };
+  }
+  if (E.QWEN_API_KEY || E.DASHSCOPE_API_KEY) {
+    // Alibaba Qwen via DashScope's OpenAI-compatible endpoint.
+    // https://qwen.ai — e.g. qwen2.5-72b-instruct, qwen-plus, qwen-max.
+    return { kind: "openai", base: (E.QWEN_BASE_URL || "https://dashscope-intl.aliyuncs.com/compatible-mode/v1").replace(/\/$/, ""), key: E.QWEN_API_KEY || E.DASHSCOPE_API_KEY, model: E.QWEN_MODEL || "qwen2.5-72b-instruct", name: "qwen" };
   }
   if (E.GEMINI_API_KEY) {
     return { kind: "gemini", key: E.GEMINI_API_KEY, model: E.GEMINI_MODEL || "gemini-1.5-flash", name: "gemini" };
