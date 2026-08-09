@@ -329,6 +329,176 @@ async function generateWith(provider, payload) {
   return { ok: false, reason: "no_backend" };
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   ACCURACY LAYER — LLM-powered request understanding ("planner")
+   ───────────────────────────────────────────────────────────────
+   POST /api/nova-image  { action:"plan", request, lang, dialect,
+                           mode:"plan"|"refine"|"diagnose",
+                           currentPrompt?, instruction?, spec? }
+
+   Reuses the SAME chat-LLM environment variables as /api/nova
+   (OPENAI_API_KEY / OPENROUTER / GROQ / DEEPSEEK / GEMINI /
+   NOVA_LLM_*). When one is configured, Nova deeply understands the
+   image request (EN / MSA / Egyptian Arabic) and returns a
+   STRUCTURED generation plan the client uses to build a faithful,
+   tightly-aligned prompt — the core fix for the "generated image
+   doesn't match the request" problem. When no LLM key exists the
+   client falls back to its local heuristic understanding, which
+   now also translates Arabic subjects into English.
+   ═══════════════════════════════════════════════════════════════ */
+function resolveLLM() {
+  const E = process.env;
+  if (E.NOVA_LLM_BASE_URL && E.NOVA_LLM_API_KEY) {
+    return { kind: "openai", base: E.NOVA_LLM_BASE_URL.replace(/\/+$/, ""), key: E.NOVA_LLM_API_KEY, model: E.NOVA_LLM_MODEL || "gpt-4o-mini", name: "custom" };
+  }
+  if (E.OPENAI_API_KEY) {
+    return { kind: "openai", base: (E.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(/\/+$/, ""), key: E.OPENAI_API_KEY, model: E.OPENAI_MODEL || "gpt-4o-mini", name: "openai" };
+  }
+  if (E.OPENROUTER_API_KEY) {
+    return { kind: "openai", base: "https://openrouter.ai/api/v1", key: E.OPENROUTER_API_KEY, model: E.OPENROUTER_MODEL || "openai/gpt-4o-mini", name: "openrouter" };
+  }
+  if (E.GROQ_API_KEY) {
+    return { kind: "openai", base: "https://api.groq.com/openai/v1", key: E.GROQ_API_KEY, model: E.GROQ_MODEL || "llama-3.3-70b-versatile", name: "groq" };
+  }
+  if (E.DEEPSEEK_API_KEY) {
+    return { kind: "openai", base: "https://api.deepseek.com", key: E.DEEPSEEK_API_KEY, model: E.DEEPSEEK_MODEL || "deepseek-chat", name: "deepseek" };
+  }
+  if (E.GEMINI_API_KEY) {
+    return { kind: "gemini", key: E.GEMINI_API_KEY, model: E.GEMINI_MODEL || "gemini-1.5-flash", name: "gemini" };
+  }
+  return null;
+}
+
+async function callLLM(provider, system, user) {
+  if (provider.kind === "gemini") {
+    const url = "https://generativelanguage.googleapis.com/v1beta/models/" + provider.model + ":generateContent?key=" + provider.key;
+    const r = await withTimeout(fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: system }] },
+        contents: [{ role: "user", parts: [{ text: user }] }],
+        generationConfig: { temperature: 0.25, maxOutputTokens: 900, responseMimeType: "application/json" }
+      })
+    }), 30000);
+    if (!r.ok) return null;
+    const d = await r.json();
+    const c = d.candidates && d.candidates[0] && d.candidates[0].content;
+    return c && c.parts ? c.parts.map(p => p.text).join("") : null;
+  }
+  const headers = { "Content-Type": "application/json", "Authorization": "Bearer " + provider.key };
+  if (provider.name === "openrouter") { headers["HTTP-Referer"] = "https://dentoverse.app"; headers["X-Title"] = "DentoVerse Nova"; }
+  const body = {
+    model: provider.model,
+    messages: [{ role: "system", content: system }, { role: "user", content: user }],
+    temperature: 0.25,
+    max_tokens: 900
+  };
+  // Ask for JSON mode when the provider likely supports it
+  if (provider.name !== "custom") body.response_format = { type: "json_object" };
+  let r = await withTimeout(fetch(provider.base + "/chat/completions", {
+    method: "POST", headers, body: JSON.stringify(body)
+  }), 30000);
+  if (!r.ok && body.response_format) {
+    // retry without response_format for providers that reject it
+    delete body.response_format;
+    r = await withTimeout(fetch(provider.base + "/chat/completions", {
+      method: "POST", headers, body: JSON.stringify(body)
+    }), 30000);
+  }
+  if (!r.ok) return null;
+  const d = await r.json();
+  return d.choices && d.choices[0] && d.choices[0].message ? d.choices[0].message.content : null;
+}
+
+function extractJson(text) {
+  if (!text) return null;
+  const s = String(text).trim();
+  try { return JSON.parse(s); } catch {}
+  const m = s.match(/\{[\s\S]*\}/);
+  if (m) { try { return JSON.parse(m[0]); } catch {} }
+  return null;
+}
+
+const PLAN_SYSTEM = `You are Nova's image-request analyst inside DentoVerse, a dentistry education hub. Your ONLY job is to deeply understand an image request (written in English, Modern Standard Arabic, Egyptian colloquial Arabic, or mixed) and return a precise STRUCTURED generation plan as JSON. The plan must stay 100% FAITHFUL to what the user asked — never drift into unrelated content, never over-decorate, never invent a different subject.
+
+Return ONLY a JSON object with these exact keys:
+{
+  "subject_en": "the main subject translated to clear English, specific and concrete (this becomes the prompt anchor)",
+  "goal": "what the image is for, in a few words",
+  "style": "one of: realistic | cinematic | futuristic | minimal | academic | cleanMedical | dentalEdu | poster | socialBanner | infographic | luxury | softModern | boldEditorial",
+  "mood": "short mood phrase or empty string",
+  "format": "one of: square | portrait | landscape | banner | story | poster | card | thumbnail",
+  "composition": "short composition guidance in English",
+  "audience": "target audience or 'general'",
+  "realism": "photo | illustration | flat | 3d",
+  "palette": ["colors explicitly requested, empty array if none"],
+  "must_include": ["concrete visual elements the user explicitly asked for, in English"],
+  "must_exclude": ["things the user said to avoid, plus obvious mismatch risks, in English"],
+  "text_in_image": "exact text the user wants rendered inside the image, or empty string",
+  "prompt": "a single production-grade English generation prompt, subject first, tightly aligned to the request, <= 130 words, no preamble",
+  "negative_prompt": "comma-separated things to avoid",
+  "clarify": "ONE short clarifying question in the user's own language ONLY if the request is genuinely ambiguous or conflicting, else empty string",
+  "confidence": 0.0
+}
+
+Rules:
+- subject_en and prompt must be in ENGLISH even when the request is Arabic (image models understand English best). Translate faithfully; keep proper nouns.
+- If the request is dental/medical/academic, keep it clinically and anatomically accurate, clean, professional, student-friendly; prefer dentalEdu/cleanMedical/academic styles.
+- If the user asked for minimal, do NOT add decoration. If realistic, prioritize photorealism. Follow the requested style exactly; do not blend styles.
+- must_exclude should also contain likely failure modes for this request (e.g. "extra teeth, deformed anatomy" for dental subjects; "gibberish text" when text is requested).
+- confidence is your 0-1 confidence that the plan matches the user intent. Below 0.6 you MUST fill "clarify".
+- Output JSON only. No markdown fences, no commentary.`;
+
+const DIAGNOSE_SYSTEM = `You are Nova's image-generation quality analyst. The user says the generated image did not match the request. Given the original request, the prompt that was used, and the user's complaint, identify what failed and return a corrected plan as JSON with the exact same schema you use for planning (subject_en, goal, style, mood, format, composition, audience, realism, palette, must_include, must_exclude, text_in_image, prompt, negative_prompt, clarify, confidence). Strengthen the subject anchor, move the failed aspects into must_exclude / negative_prompt, and rewrite "prompt" so a diffusion model cannot repeat the same mistake. Prompt must be English, <= 130 words. Output JSON only.`;
+
+async function handlePlan(res, body) {
+  const provider = resolveLLM();
+  const request = String(body.request || "").trim().slice(0, 1200);
+  if (!request) return json(res, 400, { ok: false, reason: "missing_request" });
+  if (!provider) return json(res, 200, { ok: false, reason: "no_llm" });
+
+  const mode = body.mode === "diagnose" ? "diagnose" : (body.mode === "refine" ? "refine" : "plan");
+  let user;
+  if (mode === "diagnose") {
+    user = `ORIGINAL REQUEST:\n${request}\n\nPROMPT THAT WAS USED:\n${String(body.currentPrompt || "").slice(0, 1500)}\n\nUSER COMPLAINT / WHAT WENT WRONG:\n${String(body.instruction || "the image does not match the request").slice(0, 500)}`;
+  } else if (mode === "refine") {
+    user = `ORIGINAL REQUEST:\n${request}\n\nCURRENT PROMPT:\n${String(body.currentPrompt || "").slice(0, 1500)}\n\nREFINEMENT INSTRUCTION (apply it while staying faithful to the original request):\n${String(body.instruction || "").slice(0, 500)}`;
+  } else {
+    user = `IMAGE REQUEST:\n${request}` + (body.context ? `\n\nCONTEXT FROM PREVIOUS SUCCESSFUL PROMPTS (style preferences only, do not copy subjects):\n${String(body.context).slice(0, 600)}` : "");
+  }
+
+  try {
+    const raw = await callLLM(provider, mode === "diagnose" ? DIAGNOSE_SYSTEM : PLAN_SYSTEM, user);
+    const plan = extractJson(raw);
+    if (!plan || !plan.prompt || !plan.subject_en) {
+      return json(res, 200, { ok: false, reason: "plan_failed" });
+    }
+    // sanitize
+    const clean = {
+      subject_en: String(plan.subject_en).slice(0, 300),
+      goal: String(plan.goal || "").slice(0, 200),
+      style: String(plan.style || "").slice(0, 40),
+      mood: String(plan.mood || "").slice(0, 120),
+      format: String(plan.format || "").slice(0, 20),
+      composition: String(plan.composition || "").slice(0, 200),
+      audience: String(plan.audience || "general").slice(0, 60),
+      realism: String(plan.realism || "").slice(0, 20),
+      palette: Array.isArray(plan.palette) ? plan.palette.slice(0, 8).map(x => String(x).slice(0, 40)) : [],
+      must_include: Array.isArray(plan.must_include) ? plan.must_include.slice(0, 10).map(x => String(x).slice(0, 120)) : [],
+      must_exclude: Array.isArray(plan.must_exclude) ? plan.must_exclude.slice(0, 12).map(x => String(x).slice(0, 120)) : [],
+      text_in_image: String(plan.text_in_image || "").slice(0, 200),
+      prompt: String(plan.prompt).slice(0, 1600),
+      negative_prompt: String(plan.negative_prompt || "").slice(0, 800),
+      clarify: String(plan.clarify || "").slice(0, 300),
+      confidence: Math.max(0, Math.min(1, Number(plan.confidence) || 0.75))
+    };
+    return json(res, 200, { ok: true, plan: clean, planner: provider.name, model: provider.model, mode });
+  } catch (e) {
+    return json(res, 200, { ok: false, reason: /timeout/i.test(String(e && e.message)) ? "timeout" : "plan_failed" });
+  }
+}
+
 /* ───────── handler ───────── */
 module.exports = async function handler(req, res) {
   setCors(res);
@@ -340,8 +510,9 @@ module.exports = async function handler(req, res) {
     return json(res, 200, {
       ok: true,
       name: "Nova Image",
-      version: "2.0-phase3",
+      version: "3.0-accuracy",
       imageGeneration: chain.length > 0,
+      planner: !!resolveLLM(),
       provider: chain.length ? chain[0].id : null,
       model: chain.length ? chain[0].model : null,
       providers: chain.map(p => ({ id: p.id, model: p.model, builtin: !!p.builtin })),
@@ -352,11 +523,14 @@ module.exports = async function handler(req, res) {
 
   if (req.method !== "POST") return json(res, 405, { ok: false, error: "Method not allowed" });
 
+  const body = await readBody(req);
+
+  // ── planner actions (request understanding / refinement / diagnosis) ──
+  if (body && body.action === "plan") return handlePlan(res, body);
+
   if (!chain.length) {
     return json(res, 200, { ok: false, reason: "no_backend" });
   }
-
-  const body = await readBody(req);
   const prompt = String(body.prompt || "").trim();
   if (!prompt) return json(res, 400, { ok: false, reason: "missing_prompt" });
 
