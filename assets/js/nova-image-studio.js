@@ -56,11 +56,32 @@
       generate: "Generate Image",
       generateOff: "Generate with connected model",
       generating: "Generating…",
-      noBackend: "No image backend connected yet — your prompt is production-ready. Paste it into any image model, or connect a backend to generate here.",
-      genFailed: "Generation failed — the prompt is still ready to use anywhere.",
+      stPreparing: "Preparing prompt",
+      stRequesting: "Contacting image engine",
+      stRendering: "Rendering your image",
+      stDone: "Done",
+      genFailed: "Generation didn't complete this time. Your prompt is safe — retry, or copy it into any image model.",
+      genFailedTimeout: "The image engine took too long to respond. Your prompt is safe — retry in a moment.",
+      genFailedNetwork: "Couldn't reach the image engine (network issue). Your prompt is safe — check your connection and retry.",
+      retry: "↻ Retry",
+      download: "⬇ Download",
+      openFull: "⤢ Open",
+      variation: "✦ New variation",
+      copyFinal: "⧉ Copy prompt",
+      downloaded: "Image downloaded ✓",
+      viaFallback: "delivered via automatic fallback",
+      metaProvider: "Engine",
+      metaModel: "Model",
+      metaSize: "Size",
+      metaSeed: "Seed",
+      metaTime: "Time",
+      finalPromptUsed: "Final prompt used",
       history: "History",
       library: "Templates",
       savedTab: "Saved",
+      imagesTab: "Images",
+      emptyGens: "Images you generate will appear here.",
+      reuse: "Reuse",
       result: "Result",
       emptyHistory: "Prompts you craft will appear here.",
       emptySaved: "Save your best prompts to reuse them.",
@@ -72,7 +93,6 @@
       fbBad: "Needs work",
       fbThanks: "Thanks — Nova will remember what works for you.",
       learned: "★ Based on your past favorites",
-      placeholderCard: "Your image will appear here once a generation backend is connected. The prompt below is ready for any professional image model.",
       openStudio: "🎨 Image Studio"
     },
     ar: {
@@ -100,11 +120,32 @@
       generate: "توليد الصورة",
       generateOff: "التوليد بالموديل المتصل",
       generating: "جاري التوليد…",
-      noBackend: "لسه مفيش موديل صور متوصّل — البرومبت جاهز للاستخدام في أي موديل احترافي، أو وصّل باكند للتوليد هنا.",
-      genFailed: "التوليد فشل — البرومبت لسه جاهز تستخدمه في أي مكان.",
+      stPreparing: "تجهيز البرومبت",
+      stRequesting: "الاتصال بمحرك الصور",
+      stRendering: "جاري رسم الصورة",
+      stDone: "تم",
+      genFailed: "التوليد ما كملش المرة دي. البرومبت محفوظ — جرّب تاني أو انسخه لأي موديل صور.",
+      genFailedTimeout: "محرك الصور اتأخر في الرد. البرومبت محفوظ — جرّب تاني بعد شوية.",
+      genFailedNetwork: "مش قادرين نوصل لمحرك الصور (مشكلة شبكة). البرومبت محفوظ — اتأكد من النت وجرّب تاني.",
+      retry: "↻ إعادة المحاولة",
+      download: "⬇ تحميل",
+      openFull: "⤢ فتح",
+      variation: "✦ نسخة جديدة",
+      copyFinal: "⧉ نسخ البرومبت",
+      downloaded: "تم تحميل الصورة ✓",
+      viaFallback: "اتولّدت عن طريق البديل التلقائي",
+      metaProvider: "المحرك",
+      metaModel: "الموديل",
+      metaSize: "المقاس",
+      metaSeed: "البذرة",
+      metaTime: "الوقت",
+      finalPromptUsed: "البرومبت النهائي المستخدم",
       history: "السجل",
       library: "قوالب",
       savedTab: "المحفوظ",
+      imagesTab: "الصور",
+      emptyGens: "الصور اللي بتولّدها هتظهر هنا.",
+      reuse: "استخدم",
       result: "النتيجة",
       emptyHistory: "البرومبتات اللي بتعملها هتظهر هنا.",
       emptySaved: "احفظ أحسن برومبتاتك عشان تعيد استخدامها.",
@@ -116,7 +157,6 @@
       fbBad: "محتاجة شغل",
       fbThanks: "شكراً — نوفا هيفتكر إيه اللي بيعجبك.",
       learned: "★ مبني على اختياراتك السابقة",
-      placeholderCard: "الصورة هتظهر هنا أول ما يتوصّل باكند توليد. البرومبت تحت جاهز لأي موديل صور احترافي.",
       openStudio: "🎨 استوديو الصور"
     }
   };
@@ -129,6 +169,9 @@
     activeVariant: "detailed",
     lastEntry: null,
     tab: "history",
+    generating: false,
+    lastGen: null,       // last successful generation result (for variations)
+    lastGenPayload: null, // payload used for the last attempt (for retry)
     el: {}
   };
   const t = (k) => (I18N[S.lang] && I18N[S.lang][k]) || I18N.en[k] || k;
@@ -230,12 +273,13 @@
             </section>
           </div>
 
-          <!-- side: history / templates / saved -->
+          <!-- side: history / templates / saved / generated images -->
           <aside class="nis-side">
             <div class="nis-side-tabs">
               <button class="nis-side-tab active" data-nis-tab="history" data-nis="history"></button>
               <button class="nis-side-tab" data-nis-tab="library" data-nis="library"></button>
               <button class="nis-side-tab" data-nis-tab="saved" data-nis="savedTab"></button>
+              <button class="nis-side-tab" data-nis-tab="images" data-nis="imagesTab"></button>
             </div>
             <div class="nis-side-body" id="nis-side-body"></div>
           </aside>
@@ -344,11 +388,14 @@
     updateGenerateBtn();
   }
   function updateGenerateBtn() {
-    const NI = $img(); const o = S.el.overlay; if (!o) return;
+    const o = S.el.overlay; if (!o) return;
     const b = o.querySelector("#nis-generate");
-    const on = NI && NI.Backend.available;
-    b.textContent = on ? ("⚡ " + t("generate")) : ("🔌 " + t("generateOff"));
-    b.classList.toggle("off", !on);
+    // The generation pipeline is always available: server provider chain
+    // with a built-in keyless default, plus a direct client-side fallback.
+    b.textContent = S.generating ? ("⏳ " + t("generating")) : ("⚡ " + t("generate"));
+    b.disabled = !!S.generating;
+    b.classList.toggle("busy", !!S.generating);
+    b.classList.remove("off");
   }
 
   /* ───────── craft flow ───────── */
@@ -482,42 +529,166 @@
     toast(t("fbThanks"), good ? "👍" : "🧠");
   }
 
-  /* ───────── generation (real backend or premium placeholder) ───────── */
-  async function generateImage() {
-    const NI = $img(); const entry = currentPromptEntry(); if (!NI || !entry) return;
+  /* ───────── generation — real backend pipeline ───────── */
+  const PIPELINE_STAGES = ["preparing", "requesting", "rendering", "done"];
+  function stageLabel(stage) {
+    return t({ preparing: "stPreparing", requesting: "stRequesting", rendering: "stRendering", done: "stDone" }[stage] || "stPreparing");
+  }
+  function renderPipeline(box, activeStage, ratio) {
+    const activeIdx = PIPELINE_STAGES.indexOf(activeStage);
+    const steps = PIPELINE_STAGES.map((s, i) => {
+      const cls = i < activeIdx ? "done" : (i === activeIdx ? "active" : "");
+      return `<div class="nis-pipe-step ${cls}"><span class="nis-pipe-dot">${i < activeIdx ? "✓" : ""}</span><span class="nis-pipe-lbl">${esc(stageLabel(s))}</span></div>`;
+    }).join('<span class="nis-pipe-line"></span>');
+    box.innerHTML = `
+      <div class="nis-pipe">${steps}</div>
+      <div class="nis-ph-card generating ratio-${(ratio || "1:1").replace(":", "-")}">
+        <div class="nis-ph-inner">
+          <span class="nis-spinner big"></span>
+          <strong>${esc(stageLabel(activeStage))}…</strong>
+        </div>
+      </div>`;
+  }
+  function failReasonText(reason) {
+    if (reason === "timeout") return t("genFailedTimeout");
+    if (reason === "network_error") return t("genFailedNetwork");
+    return t("genFailed");
+  }
+  function fmtSeconds(ms) { return ms ? (Math.round(ms / 100) / 10) + "s" : ""; }
+
+  async function runGeneration(payload) {
+    const NI = $img(); if (!NI || S.generating) return;
     const o = S.el.overlay;
     const box = o.querySelector("#nis-result");
     box.hidden = false;
+    S.generating = true;
+    S.lastGenPayload = payload;
+    updateGenerateBtn();
 
-    if (!NI.Backend.available) {
-      const f = NI.Formats.list[entry.format] || NI.Formats.list.square;
-      box.innerHTML = `
-        <div class="nis-ph-card ratio-${f.ratio.replace(":", "-")}">
-          <div class="nis-ph-inner">
-            <span class="nis-ph-icon">🖼️</span>
-            <strong>${t("result")} · ${f.ratio}</strong>
-            <p>${t("placeholderCard")}</p>
-          </div>
-        </div>
-        <div class="nis-ph-note">🔌 ${t("noBackend")}</div>`;
-      box.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      return;
+    const f = NI.Formats.list[payload.format] || NI.Formats.list.square;
+    renderPipeline(box, "preparing", f.ratio);
+    box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+    let res;
+    try {
+      res = await NI.Backend.generate(Object.assign({}, payload), (stage) => {
+        if (stage !== "error" && stage !== "done") renderPipeline(box, stage, f.ratio);
+      });
+    } catch (e) {
+      res = { ok: false, reason: "network_error" };
     }
+    S.generating = false;
+    updateGenerateBtn();
 
-    box.innerHTML = `<div class="nis-gen-loading"><span class="nis-spinner"></span> ${t("generating")}</div>`;
-    const res = await NI.Backend.generate({
-      prompt: entry.prompt, negative: entry.negative,
-      format: entry.format, preset: entry.preset
-    });
-    if (res.ok && res.images && res.images.length) {
-      box.innerHTML = res.images.map(im =>
-        `<figure class="nis-gen-img"><img src="${esc(im.url)}" alt="Generated image" loading="lazy" /><figcaption>${esc(res.provider || "")}</figcaption></figure>`
-      ).join("");
-      NI.Memory.approve(entry);
+    if (res && res.ok && res.images && res.images.length) {
+      S.lastGen = res;
+      renderGenerationResult(box, res, payload);
+      // record in local generation history + learning loop
+      try {
+        res.images.forEach((im, i) => {
+          NI.Generations.add({
+            prompt: payload.prompt, negative: payload.negative,
+            preset: payload.preset, format: payload.format,
+            provider: res.provider, model: res.model,
+            seed: im.seed || res.seed || null,
+            width: im.width || res.width, height: im.height || res.height,
+            url: im.url, sourceUrl: im.sourceUrl
+          });
+          if (i === 0 && S.lastEntry) NI.Memory.approve(S.lastEntry);
+        });
+      } catch (e) {}
+      if (S.tab === "images") renderSide();
     } else {
-      box.innerHTML = `<div class="nis-ph-note warn">⚠️ ${t("genFailed")}</div>`;
+      renderGenerationError(box, res && res.reason);
     }
     box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  function renderGenerationResult(box, res, payload) {
+    const seed = (res.images[0] && res.images[0].seed) || res.seed || "";
+    const metaBits = [
+      res.provider ? `<span class="nis-meta-item"><em>${t("metaProvider")}</em> ${esc(res.provider)}</span>` : "",
+      res.model ? `<span class="nis-meta-item"><em>${t("metaModel")}</em> ${esc(res.model)}</span>` : "",
+      (res.width && res.height) ? `<span class="nis-meta-item"><em>${t("metaSize")}</em> ${res.width}×${res.height}</span>` : "",
+      seed ? `<span class="nis-meta-item"><em>${t("metaSeed")}</em> ${esc(String(seed))}</span>` : "",
+      res.elapsedMs ? `<span class="nis-meta-item"><em>${t("metaTime")}</em> ${fmtSeconds(res.elapsedMs)}</span>` : "",
+      res.fallback ? `<span class="nis-meta-item fb">↪ ${t("viaFallback")}</span>` : ""
+    ].filter(Boolean).join("");
+
+    box.innerHTML = `
+      ${res.images.map((im, i) => `
+        <figure class="nis-gen-img" data-idx="${i}">
+          <img src="${esc(im.url)}" alt="Generated image" loading="lazy" />
+        </figure>`).join("")}
+      <div class="nis-gen-meta">${metaBits}</div>
+      <details class="nis-final-prompt"><summary>${t("finalPromptUsed")}</summary><div class="nis-final-prompt-txt" dir="ltr">${esc(payload.prompt)}</div></details>
+      <div class="nis-gen-actions">
+        <button class="nis-btn" data-gen-act="download">${t("download")}</button>
+        <button class="nis-btn" data-gen-act="open">${t("openFull")}</button>
+        <button class="nis-btn" data-gen-act="copyPrompt">${t("copyFinal")}</button>
+        <button class="nis-btn accent" data-gen-act="variation">${t("variation")}</button>
+      </div>`;
+
+    box.querySelector('[data-gen-act="download"]').addEventListener("click", () => downloadImage(res.images[0], payload));
+    box.querySelector('[data-gen-act="open"]').addEventListener("click", () => {
+      const im = res.images[0];
+      try { window.open(im.sourceUrl || im.url, "_blank", "noopener"); } catch (e) {}
+    });
+    box.querySelector('[data-gen-act="copyPrompt"]').addEventListener("click", () => copyText(payload.prompt + (payload.negative ? "\n\nNegative prompt: " + payload.negative : "")));
+    box.querySelector('[data-gen-act="variation"]').addEventListener("click", () => {
+      // fresh seed → true new variation of the same prompt
+      const p = Object.assign({}, payload); delete p.seed;
+      runGeneration(p);
+    });
+  }
+
+  function renderGenerationError(box, reason) {
+    box.innerHTML = `
+      <div class="nis-ph-note warn">⚠️ ${failReasonText(reason)}</div>
+      <div class="nis-gen-actions">
+        <button class="nis-btn accent" data-gen-act="retry">${t("retry")}</button>
+        <button class="nis-btn" data-gen-act="copyPrompt">${t("copyFinal")}</button>
+      </div>`;
+    box.querySelector('[data-gen-act="retry"]').addEventListener("click", () => {
+      if (S.lastGenPayload) { const p = Object.assign({}, S.lastGenPayload); delete p.seed; runGeneration(p); }
+    });
+    box.querySelector('[data-gen-act="copyPrompt"]').addEventListener("click", () => {
+      const p = S.lastGenPayload;
+      if (p) copyText(p.prompt + (p.negative ? "\n\nNegative prompt: " + p.negative : ""));
+    });
+  }
+
+  function copyText(txt) {
+    (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(
+      () => toast(t("copied"), "⧉"),
+      () => { const ta = el("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); toast(t("copied"), "⧉"); } catch (e) {} ta.remove(); }
+    );
+  }
+
+  async function downloadImage(im, payload) {
+    try {
+      const name = "nova-image-" + (payload.preset || "art") + "-" + Date.now() + ".png";
+      let href = im.url;
+      if (!/^data:/i.test(href)) {
+        // fetch → blob so cross-origin images download instead of navigating
+        const r = await fetch(href, { mode: "cors" });
+        if (r.ok) href = URL.createObjectURL(await r.blob());
+      }
+      const a = el("a"); a.href = href; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      if (href.startsWith("blob:")) setTimeout(() => URL.revokeObjectURL(href), 4000);
+      toast(t("downloaded"), "⬇");
+    } catch (e) {
+      try { window.open(im.sourceUrl || im.url, "_blank", "noopener"); } catch (e2) {}
+    }
+  }
+
+  function generateImage() {
+    const NI = $img(); const entry = currentPromptEntry(); if (!NI || !entry) return;
+    runGeneration({
+      prompt: entry.prompt, negative: entry.negative,
+      format: entry.format, preset: entry.preset, count: 1
+    });
   }
 
   /* ───────── side panel: history / templates / saved ───────── */
@@ -550,6 +721,44 @@
           });
           body.appendChild(card);
         });
+      });
+      return;
+    }
+
+    if (S.tab === "images") {
+      const gens = NI.Generations ? NI.Generations.list() : [];
+      body.innerHTML = gens.length ? "" : `<div class="nis-side-empty">${t("emptyGens")}</div>`;
+      gens.forEach(g => {
+        const card = el("div", "nis-side-card gen",
+          `${g.url ? `<div class="nis-gen-thumb"><img src="${esc(g.url)}" alt="" loading="lazy" /></div>` : ""}
+           <div class="nis-side-card-head">🖼 <strong>${esc((g.prompt || "").slice(0, 46))}</strong></div>
+           <div class="nis-side-card-sub">${esc(g.provider || "")}${g.model ? " · " + esc(g.model) : ""}${g.width ? " · " + g.width + "×" + g.height : ""}</div>
+           <div class="nis-side-card-actions">
+             <button class="nis-mini-btn" data-a="reuse">${t("reuse")}</button>
+             <button class="nis-mini-btn ghost" data-a="del">✕</button>
+           </div>`);
+        card.querySelector('[data-a="reuse"]').addEventListener("click", () => {
+          // restore the prompt + settings, then regenerate with the same seed
+          const o2 = S.el.overlay;
+          const spec = NI.Understand.parse(g.prompt || "");
+          spec.preset = g.preset || spec.preset;
+          spec.format = g.format || spec.format;
+          S.spec = spec;
+          S.variants = NI.Variants(spec);
+          S.activeVariant = "detailed";
+          o2.querySelector("#nis-request").value = (g.prompt || "").slice(0, 220);
+          reflectSpecInControls();
+          renderOutput();
+          o2.querySelector("#nis-prompt").textContent = g.prompt || "";
+          if (g.negative) o2.querySelector("#nis-negative").textContent = g.negative;
+          runGeneration({
+            prompt: g.prompt, negative: g.negative || "",
+            format: g.format || "square", preset: g.preset || "", count: 1,
+            seed: g.seed || undefined
+          });
+        });
+        card.querySelector('[data-a="del"]').addEventListener("click", () => { NI.Generations.remove(g.id); renderSide(); });
+        body.appendChild(card);
       });
       return;
     }
