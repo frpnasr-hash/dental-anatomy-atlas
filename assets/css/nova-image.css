@@ -483,3 +483,66 @@
   color: var(--nis-orange, #ff6b1a);
   transform: translateY(-1px);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   ACCURACY LAYER UI — understanding banner, plan badge, clarify,
+   validation note & mismatch/diagnose loop
+   ═══════════════════════════════════════════════════════════════ */
+.nis-understand {
+  display: flex; align-items: center; gap: 9px;
+  margin: 8px 2px 0; padding: 8px 12px;
+  font-size: .82rem; color: var(--nis-cyan, #00d4ff);
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px solid rgba(0, 212, 255, 0.24);
+  border-radius: 12px;
+}
+.nis-plan-badge {
+  margin: 6px 0 2px; padding: 8px 11px;
+  font-size: .8rem; line-height: 1.45; border-radius: 11px;
+}
+.nis-plan-badge.ok {
+  color: #b7f7d8; background: rgba(29, 209, 122, 0.12);
+  border: 1px solid rgba(29, 209, 122, 0.32);
+}
+.nis-plan-badge.local {
+  color: #d9e6f5; background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.nis-plan-badge em { display: block; margin-top: 3px; font-style: normal; color: #ffd7a8; opacity: .95; }
+.nis-clarify {
+  margin-top: 10px; padding: 11px 13px;
+  background: rgba(255, 107, 26, 0.09);
+  border: 1px solid rgba(255, 107, 26, 0.34);
+  border-radius: 13px;
+}
+.nis-clarify strong { color: var(--nis-orange, #ff6b1a); font-size: .84rem; }
+.nis-clarify p { margin: 6px 0 9px; font-size: .86rem; color: #eaf2fb; }
+.nis-clarify-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.nis-clarify-row .nis-input.slim { flex: 1 1 160px; }
+.nis-btn.ghost {
+  background: transparent; border: 1px solid var(--nis-border, rgba(0,212,255,.22));
+  opacity: .85;
+}
+.nis-validate-note {
+  margin: 8px 0 2px; padding: 7px 11px;
+  font-size: .78rem; border-radius: 10px;
+  color: #b7f7d8; background: rgba(29, 209, 122, 0.10);
+  border: 1px solid rgba(29, 209, 122, 0.28);
+}
+.nis-validate-note.warn { color: #ffd7a8; background: rgba(255, 168, 76, 0.10); border-color: rgba(255,168,76,.3); }
+.nis-validate-note ul { margin: 4px 0 0; padding-inline-start: 18px; }
+.nis-validate-note li { margin: 2px 0; opacity: .92; }
+.nis-mismatch { margin-top: 12px; }
+.nis-mismatch-toggle {
+  width: 100%; text-align: start; cursor: pointer;
+  background: rgba(255, 92, 92, 0.10);
+  border: 1px solid rgba(255, 92, 92, 0.34);
+  color: #ffc9c9; border-radius: 12px; padding: 9px 13px;
+  font-size: .84rem; font-weight: 600; transition: .18s;
+}
+.nis-mismatch-toggle:hover { background: rgba(255, 92, 92, 0.18); }
+.nis-mismatch-panel { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
+.nis-mismatch-panel .nis-input.slim { flex: 1 1 200px; }
+.panel.rtl .nis-understand,
+.nis-panel.rtl .nis-clarify strong,
+.nis-panel.rtl .nis-mismatch-toggle { text-align: right; }

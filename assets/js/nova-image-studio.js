@@ -93,7 +93,21 @@
       fbBad: "Needs work",
       fbThanks: "Thanks — Nova will remember what works for you.",
       learned: "★ Based on your past favorites",
-      openStudio: "🎨 Image Studio"
+      openStudio: "🎨 Image Studio",
+      understanding: "Nova is understanding your request…",
+      planApplied: "✓ Nova understood your request and built a faithful prompt.",
+      planLocal: "Nova prepared your prompt locally (deep planner offline).",
+      validating: "Checking the prompt matches your request…",
+      validated: "✓ Prompt aligned to your request",
+      clarifyLead: "Quick question to get it right:",
+      clarifyIgnore: "Generate anyway",
+      mismatch: "🎯 Doesn't match my request",
+      mismatchPh: "Tell Nova what was wrong (e.g. “it drew the wrong tooth”, “not academic enough”)…",
+      diagnosing: "Nova is analysing what went wrong…",
+      diagnosed: "✓ Nova corrected the prompt — regenerating.",
+      refining: "Refining while staying faithful to your request…",
+      confLow: "Nova isn't fully sure — review the prompt below before generating.",
+      qualityCheck: "Accuracy check"
     },
     ar: {
       dir: "rtl",
@@ -157,7 +171,21 @@
       fbBad: "محتاجة شغل",
       fbThanks: "شكراً — نوفا هيفتكر إيه اللي بيعجبك.",
       learned: "★ مبني على اختياراتك السابقة",
-      openStudio: "🎨 استوديو الصور"
+      openStudio: "🎨 استوديو الصور",
+      understanding: "نوفا بيفهم طلبك…",
+      planApplied: "✓ نوفا فهم طلبك وجهّز برومبت مطابق لطلبك.",
+      planLocal: "نوفا جهّز البرومبت محلياً (المحلّل الذكي غير متاح دلوقتي).",
+      validating: "بنتأكد إن البرومبت مطابق لطلبك…",
+      validated: "✓ البرومبت متطابق مع طلبك",
+      clarifyLead: "سؤال سريع عشان نظبطها صح:",
+      clarifyIgnore: "ولّد على أي حال",
+      mismatch: "🎯 مش مطابقة لطلبي",
+      mismatchPh: "قول لنوفا إيه اللي غلط (مثلاً «رسم سن غلط»، «مش أكاديمي كفاية»)…",
+      diagnosing: "نوفا بيحلّل إيه اللي حصل غلط…",
+      diagnosed: "✓ نوفا صحّح البرومبت — بيعيد التوليد.",
+      refining: "بنحسّن مع الحفاظ على مطابقة طلبك…",
+      confLow: "نوفا مش متأكد تماماً — راجع البرومبت تحت قبل التوليد.",
+      qualityCheck: "فحص الدقة"
     }
   };
 
@@ -398,8 +426,15 @@
     b.classList.remove("off");
   }
 
-  /* ───────── craft flow ───────── */
-  function craft() {
+  /* ───────── craft flow ─────────
+     Two-stage understanding:
+       1. Local heuristic parse (instant, always works, translates Arabic).
+       2. LLM Planner (deep request understanding) — when available it
+          overrides the local spec with a FAITHFUL, tightly-anchored plan
+          so the generated image matches what the user actually asked.
+     The UI stays responsive: the local prompt shows immediately, then
+     upgrades in place once the planner returns. */
+  async function craft() {
     const NI = $img(); if (!NI) return;
     const o = S.el.overlay;
     const text = o.querySelector("#nis-request").value.trim();
@@ -409,9 +444,11 @@
     const det = NI.detectLang(text);
     if (det.lang !== S.lang) setLang(det.lang);
 
+    // stage 1 — instant local understanding
     let spec = NI.Understand.parse(text);
     spec = NI.Understand.personalize(spec, {});
     S.spec = spec;
+    S.lastRequestText = text;
     S.variants = NI.Variants(spec);
     S.activeVariant = "detailed";
     reflectSpecInControls();
@@ -419,6 +456,81 @@
     renderOutput();
     rememberCurrent();
     renderSide();
+
+    // stage 2 — deep LLM planning (non-blocking; upgrades the prompt in place)
+    if (NI.Planner && NI.Planner.available !== false) {
+      showUnderstanding(true);
+      try {
+        const ctx = NI.Planner.memoryContext ? NI.Planner.memoryContext() : "";
+        const plan = await NI.Planner.plan(text, ctx);
+        if (plan && S.lastRequestText === text) {
+          NI.Planner.applyToSpec(spec, plan);
+          S.spec = spec;
+          S.variants = NI.Variants(spec);
+          reflectSpecInControls();
+          renderSuggestions(spec);
+          renderOutput();
+          rememberCurrent();
+          showPlanBadge(true, spec);
+        } else if (NI.Planner.available === false) {
+          showPlanBadge(false, spec);
+        }
+      } catch (e) { /* keep the local prompt */ }
+      showUnderstanding(false);
+    }
+  }
+
+  /* Understanding / planning status banner above the request box */
+  function showUnderstanding(on) {
+    const o = S.el.overlay; if (!o) return;
+    let b = o.querySelector("#nis-understand");
+    if (on) {
+      if (!b) {
+        b = el("div", "nis-understand", `<span class="nis-spinner"></span> <span></span>`);
+        b.id = "nis-understand";
+        const req = o.querySelector(".nis-req");
+        req.parentNode.insertBefore(b, req.nextSibling);
+      }
+      b.querySelector("span:last-child").textContent = t("understanding");
+      b.hidden = false;
+    } else if (b) { b.hidden = true; }
+  }
+  function showPlanBadge(applied, spec) {
+    const o = S.el.overlay; if (!o) return;
+    const box = o.querySelector("#nis-suggest");
+    if (!box || box.hidden) return;
+    // clarify question takes priority when confidence is low
+    const clarify = spec && spec.clarify;
+    let head = box.querySelector(".nis-plan-badge");
+    if (!head) { head = el("div", "nis-plan-badge"); box.insertBefore(head, box.firstChild.nextSibling); }
+    const lowConf = spec && typeof spec.confidence === "number" && spec.confidence < 0.6;
+    head.className = "nis-plan-badge" + (applied ? " ok" : " local");
+    head.innerHTML = applied
+      ? `${t("planApplied")}${lowConf ? ` <em>${t("confLow")}</em>` : ""}`
+      : t("planLocal");
+    // render a clarify prompt the user can answer or skip
+    let cbox = box.querySelector(".nis-clarify");
+    if (cbox) cbox.remove();
+    if (clarify) {
+      cbox = el("div", "nis-clarify",
+        `<strong>❓ ${t("clarifyLead")}</strong><p dir="${S.lang === "ar" ? "rtl" : "ltr"}">${esc(clarify)}</p>
+         <div class="nis-clarify-row">
+           <input type="text" class="nis-input slim" id="nis-clarify-input" />
+           <button class="nis-btn primary" id="nis-clarify-send">${t("improve")}</button>
+           <button class="nis-btn ghost" id="nis-clarify-skip">${t("clarifyIgnore")}</button>
+         </div>`);
+      box.appendChild(cbox);
+      cbox.querySelector("#nis-clarify-send").addEventListener("click", () => {
+        const ans = cbox.querySelector("#nis-clarify-input").value.trim();
+        if (!ans) return;
+        // fold the answer back into the request and re-plan
+        o.querySelector("#nis-request").value = S.lastRequestText + " — " + ans;
+        cbox.remove();
+        craft();
+      });
+      cbox.querySelector("#nis-clarify-input").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); cbox.querySelector("#nis-clarify-send").click(); } });
+      cbox.querySelector("#nis-clarify-skip").addEventListener("click", () => cbox.remove());
+    }
   }
 
   function renderSuggestions(spec) {
