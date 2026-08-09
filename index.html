@@ -89,9 +89,13 @@
    7. nova-image-studio.js           → NEW · premium Image Studio overlay UI.
    8. nova-chat.js                   → NEW · Phase 2/3 chat bridge (additive;
                                        wires image requests + Studio launcher).
+   9. nova-learn.js                  → NEW · Phase 4 safe learning layer
+                                       (ingest user-provided chat logs,
+                                       prompt examples & notes into a
+                                       local indexed knowledge store).
   Existing globals (window.SECTIONS, window.RESOURCES, window.PINNED_IDS,
   window.NovaPDF, window.DentoVerse, window.NovaAssistant) keep working.
-  New globals: window.NovaImage, window.NovaImageStudio.
+  New globals: window.NovaImage, window.NovaImageStudio, window.NovaLearn.
 -->
 <script src="assets/js/data.js"></script>
 <script src="assets/js/hub.js"></script>
@@ -103,5 +107,6 @@
 <script src="assets/js/nova-image.js"></script>
 <script src="assets/js/nova-image-studio.js"></script>
 <script src="assets/js/nova-chat.js"></script>
+<script src="assets/js/nova-learn.js"></script>
 </body>
 </html>
