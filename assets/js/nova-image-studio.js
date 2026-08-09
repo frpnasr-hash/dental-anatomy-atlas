@@ -617,11 +617,16 @@
     renderOutput();
     if (!silent) rememberCurrent();
   }
-  function improve() {
+  async function improve() {
     const NI = $img(); if (!NI || !S.spec) return;
     const o = S.el.overlay;
     const instruction = o.querySelector("#nis-refine-input").value.trim();
     if (!instruction) return;
+
+    // Apply the local refinement instantly (fast, keeps the UI responsive),
+    // then, when the LLM planner is available, upgrade the refinement so it
+    // stays faithful to the ORIGINAL request while applying the instruction —
+    // the planner keeps the subject anchored instead of drifting.
     const { spec, notes } = NI.Refine(S.spec, instruction);
     S.spec = spec;
     S.variants = NI.Variants(spec);
@@ -635,6 +640,27 @@
     o.querySelector("#nis-refine-input").value = "";
     rememberCurrent();
     renderSide();
+
+    if (NI.Planner && NI.Planner.available !== false) {
+      showUnderstanding(true);
+      const req = S.lastRequestText || S.spec.subjectRaw || "";
+      const curPrompt = (S.variants[S.activeVariant] || S.variants.detailed).prompt;
+      try {
+        const plan = await NI.Planner.refine(req, curPrompt, instruction);
+        if (plan) {
+          NI.Planner.applyToSpec(S.spec, plan);
+          S.variants = NI.Variants(S.spec);
+          reflectSpecInControls();
+          renderOutput();
+          rememberCurrent();
+          if (nBox) {
+            nBox.innerHTML += `<div class="nis-note">✦ ${esc(t("validated"))}</div>`;
+            nBox.hidden = false;
+          }
+        }
+      } catch (e) { /* keep the local refinement */ }
+      showUnderstanding(false);
+    }
   }
   function feedback(good) {
     const NI = $img(); const entry = currentPromptEntry(); if (!NI || !entry) return;
