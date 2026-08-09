@@ -740,6 +740,13 @@
         <button class="nis-btn" data-gen-act="open">${t("openFull")}</button>
         <button class="nis-btn" data-gen-act="copyPrompt">${t("copyFinal")}</button>
         <button class="nis-btn accent" data-gen-act="variation">${t("variation")}</button>
+      </div>
+      <div class="nis-mismatch">
+        <button class="nis-mismatch-toggle" data-gen-act="mismatch">${t("mismatch")}</button>
+        <div class="nis-mismatch-panel" hidden>
+          <input type="text" class="nis-input slim" data-mismatch-input data-nis-ph="mismatchPh" placeholder="${esc(t("mismatchPh"))}" />
+          <button class="nis-btn primary" data-gen-act="diagnose">${t("improve")}</button>
+        </div>
       </div>`;
 
     box.querySelector('[data-gen-act="download"]').addEventListener("click", () => downloadImage(res.images[0], payload));
@@ -753,6 +760,75 @@
       const p = Object.assign({}, payload); delete p.seed;
       runGeneration(p);
     });
+
+    // ── mismatch / diagnose loop ──
+    const mmToggle = box.querySelector('[data-gen-act="mismatch"]');
+    const mmPanel = box.querySelector(".nis-mismatch-panel");
+    const mmInput = box.querySelector("[data-mismatch-input]");
+    mmToggle.addEventListener("click", () => {
+      mmPanel.hidden = !mmPanel.hidden;
+      if (!mmPanel.hidden) setTimeout(() => mmInput.focus(), 30);
+    });
+    mmInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); box.querySelector('[data-gen-act="diagnose"]').click(); } });
+    box.querySelector('[data-gen-act="diagnose"]').addEventListener("click", () => {
+      diagnoseMismatch(box, payload, mmInput.value.trim());
+    });
+  }
+
+  /* When the user says the result didn't match, ask the LLM planner to
+     diagnose what failed and rewrite a corrected, subject-anchored plan,
+     then regenerate. Falls back to a local refinement when no LLM exists
+     so the loop always does something useful. */
+  async function diagnoseMismatch(box, payload, complaint) {
+    const NI = $img(); if (!NI || S.generating) return;
+    const request = S.lastRequestText || (S.spec && S.spec.subjectRaw) || payload.prompt;
+    // record the negative feedback for the learning loop
+    try { if (S.lastEntry) NI.Memory.reject(S.lastEntry); } catch (e) {}
+
+    box.innerHTML = `<div class="nis-ph-note"><span class="nis-spinner"></span> ${t("diagnosing")}</div>`;
+
+    let corrected = null;
+    if (NI.Planner && NI.Planner.available !== false) {
+      try { corrected = await NI.Planner.diagnose(request, payload.prompt, complaint || "the image does not match my request"); }
+      catch (e) { corrected = null; }
+    }
+
+    if (corrected && S.spec) {
+      // apply the corrected plan → rebuild variants → validate → regenerate
+      NI.Planner.applyToSpec(S.spec, corrected);
+      S.variants = NI.Variants(S.spec);
+      reflectSpecInControls();
+      renderSuggestions(S.spec);
+      renderOutput();
+      rememberCurrent();
+      toast(t("diagnosed"), "🎯");
+      // regenerate from the corrected, validated prompt with a fresh seed
+      const entry = currentPromptEntry();
+      let prompt = entry.prompt, negative = entry.negative;
+      try {
+        const v = NI.Validator.validate(S.spec, prompt, negative);
+        prompt = v.prompt; negative = v.negative; renderValidationNote(v.issues);
+        const o = S.el.overlay;
+        o.querySelector("#nis-prompt").textContent = prompt;
+        o.querySelector("#nis-negative").textContent = negative;
+      } catch (e) {}
+      runGeneration({ prompt, negative, format: entry.format, preset: entry.preset, count: 1 });
+      return;
+    }
+
+    // ── local fallback: fold the complaint in as a refinement ──
+    if (S.spec) {
+      const instr = complaint || "make it match the request more accurately, correct the subject";
+      const { spec, notes } = NI.Refine(S.spec, instr);
+      S.spec = spec; S.variants = NI.Variants(spec);
+      reflectSpecInControls(); renderOutput(); rememberCurrent();
+      const o = S.el.overlay; const nBox = o.querySelector("#nis-notes");
+      if (notes.length) { nBox.innerHTML = notes.map(n => `<div class="nis-note">✦ ${esc(n)}</div>`).join(""); nBox.hidden = false; }
+      const entry = currentPromptEntry();
+      let prompt = entry.prompt, negative = entry.negative;
+      try { const v = NI.Validator.validate(spec, prompt, negative); prompt = v.prompt; negative = v.negative; renderValidationNote(v.issues); } catch (e) {}
+      runGeneration({ prompt, negative, format: entry.format, preset: entry.preset, count: 1 });
+    }
   }
 
   function renderGenerationError(box, reason) {
