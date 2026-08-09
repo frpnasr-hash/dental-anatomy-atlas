@@ -93,9 +93,16 @@
                                        (ingest user-provided chat logs,
                                        prompt examples & notes into a
                                        local indexed knowledge store).
+  10. nova-understand.js             → NEW · Phase 4 deep intent
+                                       understanding (must load AFTER
+                                       nova-chat.js so it wraps its
+                                       fetch shim, and AFTER nova-learn
+                                       so it can attach learned context
+                                       to every /api/nova POST).
   Existing globals (window.SECTIONS, window.RESOURCES, window.PINNED_IDS,
   window.NovaPDF, window.DentoVerse, window.NovaAssistant) keep working.
-  New globals: window.NovaImage, window.NovaImageStudio, window.NovaLearn.
+  New globals: window.NovaImage, window.NovaImageStudio, window.NovaLearn,
+              window.NovaUnderstand.
 -->
 <script src="assets/js/data.js"></script>
 <script src="assets/js/hub.js"></script>
@@ -108,5 +115,6 @@
 <script src="assets/js/nova-image-studio.js"></script>
 <script src="assets/js/nova-chat.js"></script>
 <script src="assets/js/nova-learn.js"></script>
+<script src="assets/js/nova-understand.js"></script>
 </body>
 </html>
