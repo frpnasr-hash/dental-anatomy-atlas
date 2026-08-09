@@ -253,8 +253,102 @@ async function runWebSearch(provider, query) {
 }
 function safeHost(url) { try { return new URL(url).hostname.replace(/^www\./, ""); } catch (e) { return ""; } }
 
+/* ───────── Phase 5 · deep understanding + learned-context sanitizers ─────────
+   The client (nova-understand.js) attaches a rich "understanding" envelope and
+   an optional "learned" array (user-provided chat logs / notes / prompt examples
+   indexed locally). Older backends ignored these; Phase 5 folds them into the
+   system prompt so the model plans against the real request structure and can
+   use the user's own material as grounded context. All input is sanitized and
+   length-capped; nothing here trusts the client blindly. */
+function clampStr(v, n) { return String(v == null ? "" : v).slice(0, n); }
+function clampArr(a, n, mapFn) {
+  if (!Array.isArray(a)) return [];
+  return a.slice(0, n).map(mapFn || (x => x)).filter(Boolean);
+}
+
+function sanitizeUnderstanding(u) {
+  if (!u || typeof u !== "object") return null;
+  const lang = (u.lang && typeof u.lang === "object") ? u.lang : {};
+  const out = {
+    intent:      clampStr(u.intent, 24),
+    depth:       clampStr(u.depth, 16),
+    tone:        clampStr(u.tone, 16),
+    followUp:    !!u.followUp,
+    imageRequest:!!u.imageRequest,
+    lang: {
+      lang:    clampStr(lang.lang, 6),
+      dialect: clampStr(lang.dialect, 6),
+      mixed:   !!lang.mixed,
+      rtl:     !!lang.rtl
+    },
+    formats:     clampArr(u.formats, 8, x => clampStr(x, 24)),
+    mustInclude: clampArr(u.mustInclude, 8, x => clampStr(x, 120)),
+    mustExclude: clampArr(u.mustExclude, 8, x => clampStr(x, 80)),
+    entities:    clampArr(u.entities, 12, x => clampStr(x, 40)),
+    constraints: {},
+    ambiguity:   Number.isFinite(+u.ambiguity) ? Math.max(0, Math.min(1, +u.ambiguity)) : null,
+    confidence:  Number.isFinite(+u.confidence) ? Math.max(0, Math.min(1, +u.confidence)) : null,
+    clarify:     u.clarify ? clampStr(u.clarify, 240) : null
+  };
+  if (u.constraints && typeof u.constraints === "object") {
+    ["wordLimit", "pageLimit", "sentences", "bullets", "minutes"].forEach(k => {
+      if (Number.isFinite(+u.constraints[k])) out.constraints[k] = Math.max(0, Math.min(100000, +u.constraints[k]));
+    });
+  }
+  return out;
+}
+
+function sanitizeLearned(list) {
+  if (!Array.isArray(list)) return [];
+  return list.slice(0, 5).map(item => {
+    if (!item || typeof item !== "object" || typeof item.text !== "string") return null;
+    return {
+      text:   clampStr(item.text, 1600),
+      source: clampStr(item.source, 24),
+      title:  clampStr(item.title, 120),
+      tags:   clampArr(item.tags, 6, x => clampStr(x, 24)),
+      lang:   clampStr(item.lang, 6)
+    };
+  }).filter(Boolean);
+}
+
+/* Compact, model-readable directive block derived from the understanding envelope.
+   Mirrors nova-understand.toPromptDirectives so behaviour is identical whether the
+   client sent directives or only the raw envelope. */
+function understandingDirectives(u) {
+  if (!u) return "";
+  const lines = [];
+  lines.push(`Detected intent: ${u.intent || "general"}${u.followUp ? " (follow-up — connect it to the previous turn)" : ""}.`);
+  const langLabel = u.lang.lang === "ar"
+    ? `Arabic (${u.lang.dialect || "msa"})${u.lang.mixed ? ", mixed with English" : ""}`
+    : (u.lang.lang || "en") + (u.lang.mixed ? ", mixed with Arabic" : "");
+  lines.push(`Language to answer in: ${langLabel}. Mirror the user's register exactly.`);
+  if (u.depth) lines.push(`Requested depth: ${u.depth}${u.depth === "deep" ? " — be thorough and well-structured" : u.depth === "brief" ? " — be concise" : u.depth === "exam" ? " — make it revision/exam-ready with high-yield points" : u.depth === "stepwise" ? " — answer as ordered steps" : ""}.`);
+  if (u.tone && u.tone !== "auto") lines.push(`Requested tone: ${u.tone}.`);
+  if (u.formats && u.formats.length) lines.push(`Preferred output format: ${u.formats.join(", ")}.`);
+  if (u.mustInclude && u.mustInclude.length) lines.push(`MUST include / focus on: ${u.mustInclude.join(" · ")}.`);
+  if (u.mustExclude && u.mustExclude.length) lines.push(`MUST avoid / exclude: ${u.mustExclude.join(" · ")}.`);
+  if (u.constraints && Object.keys(u.constraints).length) {
+    lines.push("Hard constraints: " + Object.entries(u.constraints).map(([k, v]) => `${k}=${v}`).join(", ") + " (respect them precisely).");
+  }
+  if (u.entities && u.entities.length) lines.push(`Likely key entities/terms: ${u.entities.slice(0, 10).join(", ")}.`);
+  if (u.ambiguity != null && u.ambiguity >= 0.55 && u.clarify) {
+    lines.push(`This request looks ambiguous (${u.ambiguity.toFixed(2)}). If you cannot infer the intent confidently from context, ask this one clarifying question first, then stop: "${u.clarify}"`);
+  }
+  return lines.join("\n");
+}
+
+function learnedBlock(learned) {
+  if (!learned || !learned.length) return "";
+  return "\n\n## USER-PROVIDED LEARNED MATERIAL (indexed by the user in THIS browser — chat logs, notes, prompt examples)\n" +
+    "Treat this as trusted context the user chose to teach Nova. Use it to match their preferred style, terminology, examples and prior answers. Do NOT fabricate beyond it.\n" +
+    learned.map((m, i) =>
+      `[LEARNED ${i + 1}${m.title ? " · " + m.title : ""}${m.tags && m.tags.length ? " · " + m.tags.join(",") : ""}]\n${m.text}`
+    ).join("\n\n");
+}
+
 /* ───────── system prompt (the heart of Nova) ───────── */
-function buildSystemPrompt(ctx, uploadedPdf) {
+function buildSystemPrompt(ctx, uploadedPdf, understanding, learned) {
   const site    = (ctx && ctx.site)    || {};
   const sections = (ctx && ctx.sections) || [];
   const resources = (ctx && ctx.topResources) || [];
@@ -284,6 +378,12 @@ function buildSystemPrompt(ctx, uploadedPdf) {
   const approvedSourcesList = (SOURCES.sources || []).slice(0, 12).map(s =>
     `- ${s.label} · ${s.host} · ${(s.tags || []).join(", ")} · trust:${s.trust || "medium"}`
   ).join("\n");
+
+  const understandingText = understandingDirectives(understanding);
+  const understandingSection = understandingText
+    ? `\n## DEEP REQUEST UNDERSTANDING (pre-computed for THIS turn — obey it)\nA deep-understanding pass analysed the user's exact message. Plan your answer against this, not a shallow keyword read:\n${understandingText}\n`
+    : "";
+  const learnedSection = learnedBlock(learned);
 
   const toolGuidance = {
     "": "",
@@ -318,7 +418,7 @@ function buildSystemPrompt(ctx, uploadedPdf) {
 - Honor proper transliteration when explaining English dental terms inside Arabic text.
 
 ${toolGuidance}
-
+${understandingSection}
 ## PHASE 2 — HOW NOVA CONTINUOUSLY IMPROVES
 1. **Continuous knowledge growth** — Nova ingests newly uploaded PDFs, lectures, videos, and resource cards automatically. The local KNOWLEDGE PASSAGES below are refreshed without manual code edits. If the user references a topic you don't yet see, say so and route them to the closest existing material or an authoritative external source (only if approved).
 2. **Smarter general AI** — You answer general questions, explain concepts, summarize long content, compare topics, follow up naturally, and behave like an expert tutor. Knowledge depth grows as new passages arrive.
@@ -359,6 +459,7 @@ ${knowledgeList || "No directly matching site passage was retrieved for this tur
 ## USER-UPLOADED PDF PASSAGES (attached in this chat — authoritative for that document)
 ${uploadedList || "No user PDF is currently attached to this conversation."}
 - When the user asks about "this PDF", "my PDF", a specific page, an outline, key points, or a summary, treat the USER PDF PASSAGES above as the primary source. Cite pages as [uploaded.pdf, p. X] using the actual file name.
+${learnedSection}
 
 ## FOLLOW-UP & CONVERSATION CONTEXT
 - Read the previous turns and connect the user's short follow-up questions ("tell me more", "why?", "and in Arabic?", "give an example") to the current topic. Never restart from scratch.
@@ -423,7 +524,15 @@ module.exports = async function handler(req, res) {
       provider: provider ? provider.name : null,
       webSearch: !!search,
       name: "Nova",
-      version: "3.1-phase2",
+      version: "4.0-phase5",
+      capabilities: {
+        deepUnderstanding: true,   // consumes client understanding envelope
+        learnedContext: true,      // folds user-indexed material into answers
+        multilingual: true,        // EN / MSA / Egyptian Arabic / mixed
+        uploadedPdf: true,
+        approvedWebSearch: !!search,
+        depthAwareGeneration: true // tunes tokens/temperature to requested depth
+      },
       knowledge: KNOWLEDGE.stats || {},
       externalSources: (SOURCES.sources || []).length,
       sourcesPolicy: SOURCES.policy || {}
@@ -459,6 +568,25 @@ module.exports = async function handler(req, res) {
       text: String(p.text || "").slice(0, 2600),
     })) : [];
 
+  // Phase 5 — deep understanding envelope + user-provided learned material.
+  const understanding = sanitizeUnderstanding(body.understanding);
+  const learned = sanitizeLearned(body.learned);
+  // Let the envelope's detected language/dialect fill client hints if the
+  // client didn't pass explicit lang/dialect/tool for this turn.
+  if (understanding) {
+    if (!context.lang && understanding.lang && understanding.lang.lang) {
+      context.lang = understanding.lang.lang === "ar"
+        ? (understanding.lang.dialect === "egy" ? "egy" : "ar")
+        : understanding.lang.lang;
+    }
+    if (!context.tool && understanding.intent) {
+      const intentToTool = { explain: "explain", summarize: "summarize", locate: "locate",
+        search: "search", recommend: "recommend", compare: "compare", translate: "translate",
+        guide: "guide" };
+      if (intentToTool[understanding.intent]) context.tool = intentToTool[understanding.intent];
+    }
+  }
+
   const clean = userMessages
     .filter(m => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
     .map(m => ({ role: m.role, content: String(m.content).slice(0, 6000) }))
@@ -493,7 +621,7 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  let sysPrompt = buildSystemPrompt(context, uploadedPdf);
+  let sysPrompt = buildSystemPrompt(context, uploadedPdf, understanding, learned);
   if (mode) {
     const modeHint = {
       short:      "Answer briefly in 1-3 sentences.",
@@ -513,7 +641,23 @@ module.exports = async function handler(req, res) {
   const messages = [{ role: "system", content: sysPrompt }, ...clean];
 
   try {
+    // Tune generation to the understood depth/format so answers match the request.
     const genOpts = uploadedPdf.length ? { temperature: 0.35 } : {};
+    if (understanding) {
+      const d = understanding.depth;
+      if (d === "deep")      genOpts.max_tokens = 1500;
+      else if (d === "exam") genOpts.max_tokens = 1300;
+      else if (d === "brief") genOpts.max_tokens = 400;
+      // Comparisons / step lists benefit from slightly lower temperature for structure.
+      if ((understanding.formats || []).some(f => f === "table" || f === "comparison" || f === "steps")
+          && genOpts.temperature == null) {
+        genOpts.temperature = 0.4;
+      }
+      // If the user set a tight word/sentence budget, cap tokens to respect it.
+      const c = understanding.constraints || {};
+      if (c.wordLimit)  genOpts.max_tokens = Math.min(genOpts.max_tokens || 950, Math.ceil(c.wordLimit * 2.2) + 60);
+      if (c.sentences)  genOpts.max_tokens = Math.min(genOpts.max_tokens || 950, c.sentences * 60 + 80);
+    }
     const result = provider.kind === "gemini"
       ? await callGemini(provider, messages, genOpts)
       : await callOpenAI(provider, messages, genOpts);
@@ -528,6 +672,10 @@ module.exports = async function handler(req, res) {
       provider: provider.name,
       web: sources.length > 0,
       usedUploadedPdf: uploadedPdf.length > 0,
+      usedUnderstanding: !!understanding,
+      usedLearned: learned.length,
+      understoodIntent: understanding ? understanding.intent : null,
+      understoodDepth: understanding ? understanding.depth : null,
       tool: context.tool || "",
       lang: context.lang || "auto",
       dialect: context.dialect || "auto",
