@@ -389,6 +389,179 @@
     }, true);
   }
 
+  /* ═══════════════════════════════════════════════════════════════
+     PHASE 4 · EXPANDED FILE INTELLIGENCE (additive)
+     ───────────────────────────────────────────────────────────────
+     The base assistant.js accepts PDFs only. Nova Phase 4 also
+     accepts text-like study material — .txt, .md, .json, .csv,
+     .html, .log — and routes it into NovaLearn so it becomes
+     searchable knowledge on future turns. PDFs still go through
+     the existing NovaPDF pipeline (untouched).
+
+     Wiring is capture-phase only — the native handleFileList in
+     assistant.js still runs first for PDFs. Non-PDF text files are
+     intercepted BEFORE that filter rejects them.
+     ═══════════════════════════════════════════════════════════════ */
+  const TEXT_ATTACH = {
+    // Accept text/*, plus common study-note extensions and json/csv.
+    accept: /\.(?:txt|md|markdown|json|csv|log|html?|rtf|srt|vtt)$/i,
+    mimes:  /^(?:text\/|application\/json|application\/xml|application\/x-yaml|application\/x-markdown|application\/rtf)/i,
+    maxMB: 8
+  };
+  function isTextLikeFile(file) {
+    if (!file) return false;
+    if (TEXT_ATTACH.mimes.test(file.type || "")) return true;
+    if (TEXT_ATTACH.accept.test(file.name || "")) return true;
+    return false;
+  }
+  function isPdfFile(file) {
+    if (!file) return false;
+    return /pdf/i.test(file.type || "") || /\.pdf$/i.test(file.name || "");
+  }
+
+  function fileT(key) {
+    const L = {
+      accepted:    { en: "Learned from",                    ar: "تم التعلّم من" },
+      pageBadge:   { en: "text file",                       ar: "ملف نصي" },
+      chunkLabel:  { en: "chunks",                          ar: "مقاطع" },
+      tooLarge:    { en: "File too large — max 8 MB.",       ar: "الملف كبير جدًا — الحد الأقصى 8 ميجابايت." },
+      empty:       { en: "That file was empty.",             ar: "الملف فاضي مافيهوش نص." },
+      failed:      { en: "Couldn't read that file.",          ar: "معرفتش أقرأ الملف ده." },
+      unsupported: { en: "Only PDFs and text notes (.txt / .md / .json / .csv / .html) can be attached.",
+                     ar: "أقدر أقبل ملفات PDF وملفات نصية (.txt / .md / .json / .csv / .html) فقط." }
+    };
+    const row = L[key] || {};
+    return row[IMG.lang] || row.en || "";
+  }
+
+  function pushTextAcceptedBubble(meta) {
+    const thread = document.getElementById("nova-thread");
+    if (!thread) return;
+    const rtl = IMG.lang === "ar";
+    const row = document.createElement("div");
+    row.className = "nova-msg bot" + (rtl ? " rtl" : "");
+    const bubble = document.createElement("div");
+    bubble.className = "nova-bubble";
+    bubble.innerHTML =
+      `<div class="nova-reply">
+         <div class="nova-pdf-status">
+           <div class="nova-pdf-icon">TXT</div>
+           <div class="nova-pdf-body">
+             <strong>${escapeHtml(meta.title || "attachment")}</strong>
+             <span>${escapeHtml(fileT("accepted"))} · ${meta.chunkCount || 0} ${escapeHtml(fileT("chunkLabel"))}</span>
+           </div>
+         </div>
+       </div>`;
+    row.appendChild(bubble);
+    thread.appendChild(row);
+    try { thread.scrollTop = thread.scrollHeight; } catch (e) {}
+  }
+
+  function toast(msg, icon) {
+    try {
+      if (window.DentoVerseEnhance && typeof window.DentoVerseEnhance.toast === "function") {
+        window.DentoVerseEnhance.toast(msg, icon || "📎");
+      } else if (window.NovaAssistant && typeof window.NovaAssistant.toast === "function") {
+        window.NovaAssistant.toast(msg, icon || "📎");
+      }
+    } catch (e) {}
+  }
+
+  async function ingestTextFile(file) {
+    if (!window.NovaLearn || typeof window.NovaLearn.addFile !== "function") return null;
+    if (file.size > TEXT_ATTACH.maxMB * 1024 * 1024) { toast(fileT("tooLarge"), "⚠️"); return null; }
+    try {
+      const entry = await window.NovaLearn.addFile(file);
+      if (!entry) { toast(fileT("failed"), "⚠️"); return null; }
+      pushTextAcceptedBubble({ title: entry.title, chunkCount: entry.chunkCount });
+      return entry;
+    } catch (err) {
+      const reason = err && err.message;
+      if (reason === "too_large")   toast(fileT("tooLarge"), "⚠️");
+      else if (reason === "empty_file") toast(fileT("empty"), "⚠️");
+      else                              toast(fileT("failed"), "⚠️");
+      return null;
+    }
+  }
+
+  /* Filter a FileList: extract the non-PDF text-like files and
+     hand them to NovaLearn. Returns true if we consumed any files. */
+  async function ingestAnyTextFiles(fileList) {
+    if (!fileList) return false;
+    const files = Array.from(fileList);
+    const textFiles = files.filter(f => !isPdfFile(f) && isTextLikeFile(f));
+    if (!textFiles.length) return false;
+    IMG.lang = detectImgLang(textFiles[0].name || "");
+    for (const f of textFiles) { await ingestTextFile(f); }
+    return true;
+  }
+
+  /* Rewire the file input's accept attribute so the browser
+     picker shows text notes too, and mirror drop handling for
+     non-PDF files (assistant.js will silently ignore them). */
+  function wireFileWidening() {
+    const fileInput = document.getElementById("nova-file");
+    if (fileInput && !fileInput.__novaLearnWidened) {
+      fileInput.setAttribute("accept",
+        "application/pdf,.pdf,text/plain,.txt,.md,.markdown,.json,.csv,.log,text/html,.html,.htm,.rtf,.srt,.vtt");
+      fileInput.__novaLearnWidened = true;
+      // Attach a capture-phase change listener so we intercept text files
+      // BEFORE assistant.js's own change listener filters to PDFs only.
+      fileInput.addEventListener("change", async (e) => {
+        try {
+          const files = Array.from(e.target.files || []);
+          const hasPdf     = files.some(isPdfFile);
+          const hasTextish = files.some(f => !isPdfFile(f) && isTextLikeFile(f));
+          if (hasTextish) {
+            await ingestAnyTextFiles(e.target.files);
+            if (!hasPdf) {
+              // Prevent the base listener from toasting "PDF not supported".
+              e.stopImmediatePropagation();
+              e.preventDefault();
+              fileInput.value = "";
+            }
+            // Mixed selections: let assistant.js still see the PDFs.
+          }
+        } catch (err) { /* graceful */ }
+      }, true);
+    }
+
+    const panel = document.querySelector(".nova-panel");
+    if (panel && !panel.__novaLearnDropHooked) {
+      panel.addEventListener("drop", async (e) => {
+        try {
+          if (!e.dataTransfer || !e.dataTransfer.files || !e.dataTransfer.files.length) return;
+          const files = Array.from(e.dataTransfer.files);
+          const hasPdf     = files.some(isPdfFile);
+          const hasTextish = files.some(f => !isPdfFile(f) && isTextLikeFile(f));
+          if (hasTextish && !hasPdf) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            await ingestAnyTextFiles(e.dataTransfer.files);
+            const drop = document.getElementById("nova-drop");
+            if (drop) drop.classList.remove("show");
+          }
+          // Mixed drops: let the PDFs go through the base handler; also ingest text.
+          else if (hasTextish && hasPdf) {
+            await ingestAnyTextFiles(e.dataTransfer.files);
+            // do NOT stop propagation — base handler still needs the PDFs.
+          }
+        } catch (err) { /* graceful */ }
+      }, true); // capture
+      panel.__novaLearnDropHooked = true;
+    }
+  }
+
+  function hookFileIntelligence() {
+    if (!window.NovaLearn) return;   // learn module missing → skip silently
+    wireFileWidening();
+    // Panel may be rebuilt — reobserve.
+    const mo = new MutationObserver(() => {
+      wireFileWidening();
+    });
+    try { mo.observe(document.body, { childList: true, subtree: true }); } catch (e) {}
+  }
+
   /* ───────── boot ───────── */
   function boot() {
     try { registerToolingContext(); } catch (e) {}
@@ -397,6 +570,7 @@
     try { hookUserTextCapture(); } catch (e) {}
     try { hookSignalsCapture(); } catch (e) {}
     try { hookImageStudio(); } catch (e) {}
+    try { hookFileIntelligence(); } catch (e) {}
     Bridge.ready = true;
   }
 
