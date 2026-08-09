@@ -1001,3 +1001,13 @@
 .nova-voice-btn:hover { background: rgba(0,212,255,.16); color: var(--electric-blue,#00d4ff); border-color: var(--nova-border-strong); }
 
 
+/* ═══════════ Learned-material grounded answers (offline NovaLearn) ═══════════ */
+.nova-learned-hit {
+  margin: .5rem 0; padding: .55rem .7rem; border-radius: 12px;
+  border: 1px solid var(--nova-border, rgba(0,212,255,.22));
+  background: linear-gradient(180deg, rgba(0,26,52,.55), rgba(0,16,34,.4));
+  backdrop-filter: blur(6px);
+}
+.nova-learned-hit strong { color: var(--electric-blue, #00d4ff); font-size: .9rem; }
+.nova-learned-snip { color: var(--ink-soft, #cfe3ff); font-size: .86rem; line-height: 1.5; opacity: .95; }
+[dir="rtl"] .nova-learned-hit { text-align: right; }

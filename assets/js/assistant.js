@@ -648,6 +648,36 @@
     return { text, sources: matches.slice(0, 4), chips: followupChips(query) };
   }
 
+  /* Offline answer sourced from the user's own learned material (NovaLearn).
+     Returns a reply object, or null when nothing relevant is indexed. */
+  function respondFromLearned(query) {
+    try {
+      if (!window.NovaLearn || typeof window.NovaLearn.search !== "function") return null;
+      const hits = window.NovaLearn.search(query, 3) || [];
+      if (!hits.length || hits[0].score < 6) return null;
+      const det = detectLang(query);
+      const top = hits.slice(0, 2);
+      const intro = L(
+        `From what you taught me, here's the most relevant material I have:`,
+        `من اللي علّمتهولي، دي أقرب مادة عندي:`
+      );
+      const blocks = top.map(h => {
+        const label = esc(h.title || (h.tags && h.tags.length ? h.tags.join(", ") : (h.source || "note")));
+        const snippet = esc(String(h.text || "").slice(0, 460)).replace(/\n+/g, "<br>");
+        return `<div class="nova-learned-hit"><strong>▹ ${label}</strong><br><span class="nova-learned-snip">${snippet}${(h.text || "").length > 460 ? "…" : ""}</span></div>`;
+      }).join("");
+      const note = L(
+        `<br><em>Source: your saved material. Connect an AI key for a fully synthesized answer.</em>`,
+        `<br><em>المصدر: المادة اللي حفظتها. وصّل مفتاح AI عشان تحصل على إجابة مصاغة بالكامل.</em>`
+      );
+      return {
+        text: `${intro}<br>${blocks}${note}`,
+        rtl: det.rtl,
+        chips: starterChips()
+      };
+    } catch (e) { return null; }
+  }
+
   function respondLocal(rawQuery) {
     const q = rawQuery.trim();
     const { qWords, concepts } = analyze(q);
@@ -701,6 +731,12 @@
     if (knowledgeMatches.length && (knowledgeIntent || knowledgeMatches[0].score >= 15)) {
       return knowledgeResponse(q, knowledgeMatches);
     }
+
+    // Learned-material grounded answer (offline): if the user has taught Nova
+    // notes / chat logs / prompt examples that match, surface them directly so
+    // the local brain still benefits from the personal knowledge index.
+    const learnedReply = respondFromLearned(q);
+    if (learnedReply) return learnedReply;
 
     // Default local: smart search across everything.
     const secGuess = detectSection(concepts, qWords);
